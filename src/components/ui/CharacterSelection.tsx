@@ -577,8 +577,8 @@ useLayoutEffect(() => {
     images.forEach(img => img.removeEventListener('load', updateHeight));
   };
 }, [activePanel]); // Add activePanel as dependency to update on panel changes
-  
-return (
+
+const renderContent = () => (
   <div className="min-h-screen w-full">
     <div 
       className="w-full h-auto bg-white rounded-[20px] pb-8"
@@ -765,10 +765,10 @@ if (index === 0) {
     performanceGoals={performanceGoals}
   />
 )}
-            </div>
+</div>
           );
         })}
       </div>
     </div>
+  </div>
 );
-}
