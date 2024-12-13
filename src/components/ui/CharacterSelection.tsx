@@ -331,6 +331,24 @@ const [activePanel, setActivePanel] = useState<{ [key: string]: 'description' | 
 const [memberId, setMemberId] = useState<string | null>(null);
 const [isLoading, setIsLoading] = useState(true);
 const [redirectUrl, setRedirectUrl] = useState<string | null>(null);
+const [characterMetrics, setCharacterMetrics] = useState<{
+  [key: string]: {
+    overall_performance: number;
+    engagement: number;
+    objection_handling: number;
+    information_gathering: number;
+    program_explanation: number;
+    closing_skills: number;
+    overall_effectiveness: number;
+    total_calls: number;
+    past_calls_count: number;
+  } | null;
+}>({});
+
+const [performanceGoals, setPerformanceGoals] = useState({
+  overall_performance_goal: 85,
+  number_of_calls_average: 10
+});
 
 useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -755,11 +773,11 @@ if (index === 0) {
     performanceGoals={performanceGoals}
   />
 )}
-</div>
-</div>
-          );
+     </div>
+       </div>
         })}
       </div>
     </div>
   </div>
 );
+}
