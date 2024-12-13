@@ -568,7 +568,12 @@ useLayoutEffect(() => {
 }, [activePanel]);
   
 return (
-    <div className="w-full bg-white rounded-[20px]">
+    <div
+      className="w-full h-auto bg-white rounded-[20px]"
+      style={{
+        boxShadow: '0 4px 8px rgba(0, 0, 0, 0.15)'
+      }}
+    >
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-5">
 
 {characters.map((character, index) => {
