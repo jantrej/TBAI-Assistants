@@ -142,7 +142,7 @@ function ScorePanel({
 }) {
   const [metrics, setMetrics] = useState<PerformanceMetrics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [redirectUrl, setRedirectUrl] = useState<string | null>(null);
+  
 
   useEffect(() => {
     // Modify the fetchMetrics function in ScorePanel:
@@ -330,6 +330,7 @@ const [activePanel, setActivePanel] = useState<{ [key: string]: 'description' | 
 
 const [memberId, setMemberId] = useState<string | null>(null);
 const [isLoading, setIsLoading] = useState(true);
+const [redirectUrl, setRedirectUrl] = useState<string | null>(null);
 
 useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
