@@ -427,17 +427,28 @@ try {
       })
     });
 
-    const responseData = await response.json();
-    console.log('Response data:', responseData);
+    const responseText = await response.text();
+    console.log('Raw response:', responseText);
+    
+    let responseData;
+    try {
+      responseData = JSON.parse(responseText);
+      console.log('Parsed response:', responseData);
+    } catch (e) {
+      console.log('Response is not JSON:', responseText);
+      if (responseText.startsWith('http')) {
+        responseData = { redirectUrl: responseText };
+      }
+    }
 
-    if (responseData.redirectUrl) {
-      console.log('Got redirect URL:', responseData.redirectUrl);
-      window.location.href = responseData.redirectUrl;
+    if (responseData?.redirectUrl) {
+      console.log('Redirecting to:', responseData.redirectUrl);
+      window.top.location.href = responseData.redirectUrl;
     } else {
-      console.error('No redirect URL in response');
+      console.error('No valid redirect URL found in response');
     }
 } catch (error) {
-    console.error('Error:', error);
+    console.error('Complete error:', error);
 }
 };
   
@@ -519,29 +530,6 @@ useEffect(() => {
 
   fetchAllMetrics();
 }, [memberId, teamId]);
-
-useEffect(() => {
-  if (redirectUrl) {
-    console.log('Primary redirect effect triggered with URL:', redirectUrl);
-    const timer = setTimeout(() => {
-      console.log('Attempting primary redirect to:', redirectUrl);
-      window.location.href = redirectUrl;
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  }
-}, [redirectUrl]);
-
-// Backup redirect mechanism
-useEffect(() => {
-  if (redirectUrl) {
-    console.log('Backup redirect effect triggered');
-    window.parent.postMessage({
-      type: 'REDIRECT',
-      url: redirectUrl
-    }, '*');
-  }
-}, [redirectUrl]);
 
 useLayoutEffect(() => {
   const updateHeight = () => {
