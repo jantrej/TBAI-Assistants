@@ -401,20 +401,48 @@ const handleStart = async (character: Character) => {
     return;
   }
 
-  // First, trigger the webhook directly
   try {
-    const fullUrl = `${apiUrl}?member_ID=${memberId}${teamId ? `&teamId=${teamId}` : ''}`;
-    const response = await fetch(fullUrl);
-    console.log('Webhook response:', response.status);
+    // Construct URL with encoded parameters
+    const params = new URLSearchParams({
+      member_ID: memberId
+    });
     
-    // After webhook is triggered, redirect
+    if (teamId) {
+      params.append('teamId', teamId);
+    }
+
+    const fullUrl = `${apiUrl}?${params.toString()}`;
+    console.log('Sending webhook request to:', fullUrl);
+
+    const response = await fetch(fullUrl, {
+      method: 'POST', // Changed to POST
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ // Added request body
+        member_ID: memberId,
+        teamId: teamId || '',
+        character: character.name
+      })
+    });
+
+    console.log('Webhook response status:', response.status);
+    
+    // Log response body for debugging
+    const responseText = await response.text();
+    console.log('Webhook response body:', responseText);
+
     if (response.ok) {
+      console.log('Webhook triggered successfully');
       window.parent.postMessage({
         type: 'REDIRECT'
       }, '*');
+    } else {
+      throw new Error(`Webhook failed with status ${response.status}: ${responseText}`);
     }
   } catch (error) {
     console.error('Error triggering webhook:', error);
+    // You might want to show an error message to the user here
   }
 };
   
