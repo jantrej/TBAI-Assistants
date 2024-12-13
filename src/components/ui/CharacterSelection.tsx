@@ -618,7 +618,7 @@ if (index === 0) {
   key={character.name} 
   className="relative rounded-[32px] overflow-hidden" 
   style={{ 
-    boxShadow: '0 4px 8px rgba(0, 0, 0, 0.3)'
+    boxShadow: '0 4px 8px rgba(0, 0, 0, 0.15)'
   }}
 >
               <div className="p-4 flex flex-col items-center text-center">
