@@ -389,7 +389,6 @@ const handleStart = async (character: Character) => {
     return;
   }
 
-  // Remove metrics check since it's not needed for starting
   const apiUrls: Record<string, string> = {
     Megan: 'https://hook.eu2.make.com/0p7hdgmvngx1iraz2a6c90z546ahbqex',
     David: 'https://hook.eu2.make.com/54eb38fg3owjjxp1q9nf95r4dg9ex6op',
@@ -402,14 +401,21 @@ const handleStart = async (character: Character) => {
     return;
   }
 
-  // Add teamId to the redirect URL
-  const fullUrl = `${apiUrl}?member_ID=${memberId}${teamId ? `&teamId=${teamId}` : ''}`;
-  console.log('Redirecting to:', fullUrl);
-  
-  window.parent.postMessage({
-    type: 'REDIRECT',
-    url: fullUrl
-  }, '*');
+  // First, trigger the webhook directly
+  try {
+    const fullUrl = `${apiUrl}?member_ID=${memberId}${teamId ? `&teamId=${teamId}` : ''}`;
+    const response = await fetch(fullUrl);
+    console.log('Webhook response:', response.status);
+    
+    // After webhook is triggered, redirect
+    if (response.ok) {
+      window.parent.postMessage({
+        type: 'REDIRECT'
+      }, '*');
+    }
+  } catch (error) {
+    console.error('Error triggering webhook:', error);
+  }
 };
   
   const togglePanel = (name: string) => {
