@@ -614,7 +614,13 @@ if (index === 0) {
           });
 
           return (
-            <div key={character.name} className="relative rounded-[32px] overflow-hidden">
+            <div 
+  key={character.name} 
+  className="relative rounded-[32px] overflow-hidden" 
+  style={{ 
+    boxShadow: '0 4px 8px rgba(0, 0, 0, 0.3)'
+  }}
+>
               <div className="p-4 flex flex-col items-center text-center">
                 <div className="w-full px-5 mb-2">
                   <div 
