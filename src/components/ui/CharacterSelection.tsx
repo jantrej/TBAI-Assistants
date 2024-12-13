@@ -578,7 +578,7 @@ useLayoutEffect(() => {
   };
 }, [activePanel]); // Add activePanel as dependency to update on panel changes
 
-const renderContent = () => (
+return (
   <div className="min-h-screen w-full">
     <div 
       className="w-full h-auto bg-white rounded-[20px] pb-8"
@@ -773,6 +773,3 @@ if (index === 0) {
     </div>
   </div>
 );
-}
-
-export default CharacterSelection;
