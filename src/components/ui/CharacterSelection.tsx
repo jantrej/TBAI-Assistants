@@ -148,9 +148,9 @@ function ScorePanel({
     // Modify the fetchMetrics function in ScorePanel:
 const fetchMetrics = async () => {
   try {
-    console.log(`Fetching metrics for ${characterName} with teamId ${teamId}`);
+    console.log(`Fetching metrics for ${characterName} with memberId ${memberId}`);
     const response = await fetch(
-      `/api/character-performance?memberId=${memberId}&teamId=${teamId}&characterName=${characterName}`
+      `/api/character-performance?memberId=${memberId}&characterName=${characterName}`
     );
     
     if (!response.ok) {
@@ -502,8 +502,8 @@ useEffect(() => {
     const metrics: typeof characterMetrics = {};
     
     for (const character of characters) {
-      try {
-        const url = `/api/character-performance?memberId=${memberId}&teamId=${teamId}&characterName=${character.name}`;
+  try {
+    const url = `/api/character-performance?memberId=${memberId}&characterName=${character.name}`;
         console.log('Fetching URL:', url);
         
         const response = await fetch(url);
