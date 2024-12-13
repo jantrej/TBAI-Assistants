@@ -234,7 +234,7 @@ const fetchMetrics = async () => {
         </div>
         <button 
           onClick={handleRecordsClick}
-          className="w-full py-3 rounded-full text-black font-semibold text-lg transition-all hover:opacity-90 hover:shadow-lg bg-white shadow-md mb-6"
+          className="w-full py-3 rounded-[20px] text-black font-semibold text-lg transition-all hover:opacity-90 hover:shadow-lg bg-white shadow-md mb-6"
         >
           Go to Call Records
         </button>
@@ -660,7 +660,7 @@ if (index === 0) {
                     </div>
                   </div>
                   <button
-  className={`w-full py-3 rounded-full text-white font-bold text-lg transition-all hover:opacity-90 hover:shadow-lg ${updatedCharacter.locked ? 'opacity-50' : ''}`}
+  className={`w-full py-3 rounded-[20px] text-white font-bold text-lg transition-all hover:opacity-90 hover:shadow-lg ${updatedCharacter.locked ? 'opacity-50' : ''}`}
   style={{
     backgroundColor: "#5f0bb9",
     boxShadow: "0 4px 14px 0 rgba(95, 11, 185, 0.39)"
@@ -681,7 +681,7 @@ if (index === 0) {
                 <div className="relative w-full mb-6 flex-grow">
                   <button 
                     onClick={() => togglePanel(character.name)}
-                    className="w-full py-3 rounded-full text-black font-semibold text-lg transition-all hover:opacity-90 hover:shadow-lg bg-white shadow-md mb-6"
+                    className="w-full py-3 rounded-[20px] text-black font-semibold text-lg transition-all hover:opacity-90 hover:shadow-lg bg-white shadow-md mb-6"
                   >
                     <span>
                       {activePanel[character.name] === 'description' ? 'View Performance' : 'Back to Description'}
