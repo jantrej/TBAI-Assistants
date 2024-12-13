@@ -356,65 +356,40 @@ const [performanceGoals, setPerformanceGoals] = useState({
 });
 
   useEffect(() => {
-    // Request member ID from parent window
+  // Get memberId directly from URL
+  const searchParams = new URLSearchParams(window.location.search);
+  const mid = searchParams.get('memberId');
+  console.log('Found memberId in URL:', mid);
+  
+  if (mid) {
+    setMemberId(mid);
+  } else {
+    // Only try message approach if no URL parameter
     window.parent.postMessage({ type: 'GET_MEMBER_ID' }, '*');
+  }
 
-    // Listen for member ID from parent
-    const handleMessage = (event: MessageEvent) => {
-      if (event.data.type === 'SET_MEMBER_ID' && event.data.memberId) {
-        console.log('Received member ID:', event.data.memberId);
-        setMemberId(event.data.memberId);
-      }
-    };
+  const handleMessage = (event: MessageEvent) => {
+    if (event.data.type === 'SET_MEMBER_ID' && event.data.memberId) {
+      console.log('Received member ID:', event.data.memberId);
+      setMemberId(event.data.memberId);
+    }
+  };
 
-    window.addEventListener('message', handleMessage);
-    return () => window.removeEventListener('message', handleMessage);
-  }, []);
+  window.addEventListener('message', handleMessage);
+  return () => window.removeEventListener('message', handleMessage);
+}, []);
 
-  const handleStart = async (character: Character) => {
+const handleStart = async (character: Character) => {
   console.log('Start button clicked for:', character.name);
+  console.log('Current memberId:', memberId);
+  console.log('Current teamId:', teamId);
 
   if (!memberId) {
     console.error('No member ID found');
     return;
   }
 
-  const currentMetrics = characterMetrics[character.name];
-
-  if (!currentMetrics) {
-    console.error('No metrics available for:', character.name);
-    return;
-  }
-
-  try {
-    const response = await fetch('/api/character-performance', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({
-    memberId,
-    teamId: teamId || 'team_default', 
-    characterName: character.name,
-    metrics: {
-          overall_performance: currentMetrics.overall_performance,
-          engagement: currentMetrics.engagement,
-          objection_handling: currentMetrics.objection_handling,
-          information_gathering: currentMetrics.information_gathering,
-          program_explanation: currentMetrics.program_explanation,
-          closing_skills: currentMetrics.closing_skills,
-          overall_effectiveness: currentMetrics.overall_effectiveness
-        }
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to record interaction');
-    }
-  } catch (error) {
-    console.error('Error recording interaction:', error);
-  }
-
+  // Remove metrics check since it's not needed for starting
   const apiUrls: Record<string, string> = {
     Megan: 'https://hook.eu2.make.com/0p7hdgmvngx1iraz2a6c90z546ahbqex',
     David: 'https://hook.eu2.make.com/54eb38fg3owjjxp1q9nf95r4dg9ex6op',
@@ -427,14 +402,16 @@ const [performanceGoals, setPerformanceGoals] = useState({
     return;
   }
 
-  const fullUrl = `${apiUrl}?member_ID=${memberId}`;
+  // Add teamId to the redirect URL
+  const fullUrl = `${apiUrl}?member_ID=${memberId}${teamId ? `&teamId=${teamId}` : ''}`;
+  console.log('Redirecting to:', fullUrl);
   
   window.parent.postMessage({
     type: 'REDIRECT',
     url: fullUrl
   }, '*');
 };
-
+  
   const togglePanel = (name: string) => {
     setActivePanel(prev => ({
       ...prev,
