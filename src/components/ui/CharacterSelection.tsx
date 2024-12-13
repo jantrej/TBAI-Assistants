@@ -597,16 +597,23 @@ if (index === 0) {
                     </div>
                   </div>
                   <button
-                    className="w-full py-3 rounded-full text-white font-bold text-lg transition-all hover:opacity-90 hover:shadow-lg"
-                    style={{
-                      backgroundColor: "#5f0bb9",
-                      boxShadow: "0 4px 14px 0 rgba(95, 11, 185, 0.39)"
-                    }}
-                    disabled={updatedCharacter.locked}
-                    onClick={() => handleStart(character)}
-                  >
-                    START
-                  </button>
+  className={`w-full py-3 rounded-full text-white font-bold text-lg transition-all hover:opacity-90 hover:shadow-lg ${updatedCharacter.locked ? 'opacity-50' : ''}`}
+  style={{
+    backgroundColor: "#5f0bb9",
+    boxShadow: "0 4px 14px 0 rgba(95, 11, 185, 0.39)"
+  }}
+  disabled={updatedCharacter.locked}
+  onClick={(e) => {
+    e.preventDefault();
+    console.log('Button clicked');
+    console.log('Character:', character.name);
+    console.log('Locked status:', updatedCharacter.locked);
+    console.log('Member ID at click:', memberId);
+    handleStart(character);
+  }}
+>
+  START {updatedCharacter.locked ? '(LOCKED)' : ''}
+</button>
                 </div>
                 <div className="relative w-full mb-6 flex-grow">
                   <button 
