@@ -432,11 +432,23 @@ const handleStart = async (character: Character) => {
     const responseText = await response.text();
     console.log('Webhook response body:', responseText);
 
-    if (response.ok) {
+    // Check for both OK (200) and redirect (302) status codes
+    if (response.ok || response.status === 302) {
       console.log('Webhook triggered successfully');
-      window.parent.postMessage({
-        type: 'REDIRECT'
-      }, '*');
+      
+      // If it's a redirect, get the Location header
+      const redirectUrl = response.headers.get('Location');
+      if (redirectUrl) {
+        console.log('Redirecting to:', redirectUrl);
+        window.parent.postMessage({
+          type: 'REDIRECT',
+          url: redirectUrl
+        }, '*');
+      } else {
+        window.parent.postMessage({
+          type: 'REDIRECT'
+        }, '*');
+      }
     } else {
       throw new Error(`Webhook failed with status ${response.status}: ${responseText}`);
     }
