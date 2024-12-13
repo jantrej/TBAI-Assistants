@@ -23,20 +23,16 @@ interface PerformanceMetrics {
   overall_effectiveness: number;
 }
 
-const DEFAULT_PAST_CALLS = 10;
-const DEFAULT_PERFORMANCE_GOAL = 85;
-
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const memberId = searchParams.get('memberId');
     const characterName = searchParams.get('characterName');
-    const teamId = searchParams.get('teamId'); // Keep for settings only
 
     console.log('Received request with params:', { memberId, characterName });
 
     if (!memberId) {
-      console.error('Missing required parameter: memberId');
+      console.error('Missing required parameters');
       return NextResponse.json(
         { error: 'Member ID is required' },
         { status: 400, headers: corsHeaders() }
@@ -47,25 +43,13 @@ export async function GET(request: Request) {
       connectionString: process.env.visionboard_PRISMA_URL
     });
 
-    // If only teamId is provided, return performance goals
-    if (teamId && !characterName) {
-      const settingsResult = await pool.sql`
-        SELECT 
-          past_calls_count,
-          overall_performance_goal
-        FROM team_settings 
-        WHERE team_id = ${teamId}`;
-      
-      const settings = settingsResult.rows[0] || { 
-        past_calls_count: DEFAULT_PAST_CALLS,
-        overall_performance_goal: DEFAULT_PERFORMANCE_GOAL
-      };
+    console.log('Executing query with params:', { memberId, characterName });
 
-      return NextResponse.json({
-        overall_performance_goal: settings.overall_performance_goal || DEFAULT_PERFORMANCE_GOAL,
-        number_of_calls_average: settings.past_calls_count || DEFAULT_PAST_CALLS
-      }, { headers: corsHeaders() });
-    }
+    // Default values for performance metrics
+    const defaultSettings = {
+      past_calls_count: 10,
+      overall_performance_goal: 85
+    };
 
     // Get metrics based on past X calls
     const { rows } = await pool.sql`
@@ -75,7 +59,7 @@ export async function GET(request: Request) {
         WHERE member_id = ${memberId}
           AND character_name = ${characterName}
         ORDER BY session_date DESC
-        LIMIT ${DEFAULT_PAST_CALLS}
+        LIMIT ${defaultSettings.past_calls_count}
       )
       SELECT 
         ROUND(AVG(overall_performance)) as overall_performance,
@@ -148,6 +132,8 @@ export async function POST(request: Request) {
       )
     `;
 
+    const pastCallsCount = 10; // Using default value since team settings are removed
+
     // Return updated metrics
     const { rows } = await pool.sql`
       WITH recent_calls AS (
@@ -156,7 +142,7 @@ export async function POST(request: Request) {
         WHERE member_id = ${memberId}
           AND character_name = ${characterName}
         ORDER BY session_date DESC
-        LIMIT ${DEFAULT_PAST_CALLS}
+        LIMIT ${pastCallsCount}
       )
       SELECT 
         ROUND(AVG(overall_performance)) as overall_performance,
@@ -175,51 +161,6 @@ export async function POST(request: Request) {
     console.error('Error recording interaction:', error);
     return NextResponse.json(
       { error: 'Failed to record interaction' },
-      { status: 500, headers: corsHeaders() }
-    );
-  }
-}
-
-// PUT endpoint for updating team settings
-export async function PUT(request: Request) {
-  try {
-    const { teamId, pastCallsCount, overall_performance_goal } = await request.json();
-
-    if (!teamId || !pastCallsCount) {
-      return NextResponse.json(
-        { error: 'Team ID and past calls count are required' },
-        { status: 400, headers: corsHeaders() }
-      );
-    }
-
-    const pool = createPool({
-      connectionString: process.env.visionboard_PRISMA_URL
-    });
-
-    // Update or insert team settings
-    await pool.sql`
-      INSERT INTO team_settings (
-        team_id, 
-        past_calls_count, 
-        overall_performance_goal
-      )
-      VALUES (
-        ${teamId}, 
-        ${pastCallsCount}, 
-        ${overall_performance_goal || DEFAULT_PERFORMANCE_GOAL}
-      )
-      ON CONFLICT (team_id) 
-      DO UPDATE SET 
-        past_calls_count = ${pastCallsCount},
-        overall_performance_goal = ${overall_performance_goal || DEFAULT_PERFORMANCE_GOAL},
-        last_updated = CURRENT_TIMESTAMP
-    `;
-
-    return NextResponse.json({ success: true }, { headers: corsHeaders() });
-  } catch (error) {
-    console.error('Error updating settings:', error);
-    return NextResponse.json(
-      { error: 'Failed to update settings' },
       { status: 500, headers: corsHeaders() }
     );
   }
