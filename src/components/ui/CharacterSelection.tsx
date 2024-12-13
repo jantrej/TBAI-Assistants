@@ -586,7 +586,6 @@ return (
         boxShadow: '0 4px 8px rgba(0, 0, 0, 0.15)'
       }}
     >
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-5">
 
 {characters.map((character, index) => {
   // Get current character metrics
