@@ -562,19 +562,21 @@ useLayoutEffect(() => {
     }
   });
 
-  return () => {
+
+return () => {
     resizeObserver.disconnect();
     images.forEach(img => img.removeEventListener('load', updateHeight));
   };
 }, [activePanel]);
 
-    <div className="min-h-screen w-full">
-      <div 
-        className="w-full h-auto bg-white rounded-[20px] pb-8"
-        style={{ 
-          boxShadow: '0 4px 8px rgba(0, 0, 0, 0.15)'
-        }}
-      >
+return (
+  <div className="min-h-screen w-full">
+    <div 
+      className="w-full h-auto bg-white rounded-[20px] pb-8"
+      style={{ 
+        boxShadow: '0 4px 8px rgba(0, 0, 0, 0.15)'
+      }}
+    >
         
 {characters.map((character, index) => {
   // Get current character metrics
