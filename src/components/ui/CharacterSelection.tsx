@@ -568,8 +568,6 @@ useLayoutEffect(() => {
   };
 }, [activePanel]);
 
-const CharacterSelection: React.FC = () => {
-  return (
     <div className="min-h-screen w-full">
       <div 
         className="w-full h-auto bg-white rounded-[20px] pb-8"
