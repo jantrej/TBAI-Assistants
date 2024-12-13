@@ -331,24 +331,6 @@ const [activePanel, setActivePanel] = useState<{ [key: string]: 'description' | 
 const [memberId, setMemberId] = useState<string | null>(null);
 const [isLoading, setIsLoading] = useState(true);
 const [redirectUrl, setRedirectUrl] = useState<string | null>(null);
-const [characterMetrics, setCharacterMetrics] = useState<{
-  [key: string]: {
-    overall_performance: number;
-    engagement: number;
-    objection_handling: number;
-    information_gathering: number;
-    program_explanation: number;
-    closing_skills: number;
-    overall_effectiveness: number;
-    total_calls: number;
-    past_calls_count: number;
-  } | null;
-}>({});
-
-const [performanceGoals, setPerformanceGoals] = useState({
-  overall_performance_goal: 85,
-  number_of_calls_average: 10
-});
 
 useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -555,22 +537,21 @@ useEffect(() => {
 
 useLayoutEffect(() => {
   const updateHeight = () => {
-    const contentHeight = document.body.scrollHeight;
-    const heightWithPadding = contentHeight + 40;
-    
+    const height = document.documentElement.scrollHeight;
     window.parent.postMessage({
       type: 'RESIZE_IFRAME',
-      height: heightWithPadding
+      height: height
     }, '*');
   };
 
-  const resizeObserver = new ResizeObserver(() => {
-    setTimeout(updateHeight, 100);
-  });
-
-  resizeObserver.observe(document.body);
+  // Update height on initial render
   updateHeight();
 
+  // Update height when panel state changes
+  const observer = new ResizeObserver(updateHeight);
+  observer.observe(document.body);
+
+  // Update height when images load
   const images = document.querySelectorAll('img');
   images.forEach(img => {
     if (img.complete) {
@@ -580,22 +561,21 @@ useLayoutEffect(() => {
     }
   });
 
-
-return () => {
-    resizeObserver.disconnect();
+  return () => {
+    observer.disconnect();
     images.forEach(img => img.removeEventListener('load', updateHeight));
   };
 }, [activePanel]);
-
+  
 return (
-  <div className="min-h-screen w-full">
-    <div 
-      className="w-full h-auto bg-white rounded-[20px] pb-8"
-      style={{ 
+    <div
+      className="w-full h-auto bg-white rounded-[20px]"
+      style={{
         boxShadow: '0 4px 8px rgba(0, 0, 0, 0.15)'
       }}
     >
-        
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-5">
+
 {characters.map((character, index) => {
   // Get current character metrics
   const currentMetrics = characterMetrics[character.name];
@@ -773,11 +753,10 @@ if (index === 0) {
     performanceGoals={performanceGoals}
   />
 )}
-     </div>
-       </div>
+            </div>
+          );
         })}
       </div>
     </div>
-  </div>
 );
 }
