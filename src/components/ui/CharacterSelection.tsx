@@ -623,10 +623,10 @@ if (index === 0) {
                      style={{
                        border: `6px solid ${
                          character.name === 'Megan'
-                         ? 'rgba(35, 197, 95, 0.2)'
+                         ? 'rgba(35, 197, 95, 0.6)'
                          : character.name === 'David'
-                         ? 'rgba(250, 162, 72, 0.2)'
-                         : 'rgba(236, 27, 38, 0.2)'
+                         ? 'rgba(250, 162, 72, 0.6)'
+                         : 'rgba(236, 27, 38, 0.6)'
                       }`,
                       borderRadius: '20px'
                     }}
