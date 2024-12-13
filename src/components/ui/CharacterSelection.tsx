@@ -626,12 +626,12 @@ if (index === 0) {
   <div 
     className="w-full h-full absolute inset-0" 
     style={{ 
-      border: `8px solid ${
+      border: `7px solid ${
         character.name === 'Megan'
-          ? 'rgba(35, 197, 95, 0.6)'
+          ? 'rgba(35, 197, 95, 0.5)'
           : character.name === 'David'
-            ? 'rgba(250, 162, 72, 0.6)'
-            : 'rgba(236, 27, 38, 0.6)'
+            ? 'rgba(250, 162, 72, 0.5)'
+            : 'rgba(236, 27, 38, 0.5)'
       }`,
       borderRadius: '20px',
       zIndex: 2
