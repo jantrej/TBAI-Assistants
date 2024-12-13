@@ -142,6 +142,7 @@ function ScorePanel({
 }) {
   const [metrics, setMetrics] = useState<PerformanceMetrics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [redirectUrl, setRedirectUrl] = useState<string | null>(null);
 
   useEffect(() => {
     // Modify the fetchMetrics function in ScorePanel:
@@ -402,7 +403,6 @@ const handleStart = async (character: Character) => {
   }
 
 try {
-    // Construct URL with encoded parameters
     const params = new URLSearchParams({
       member_ID: memberId
     });
@@ -426,25 +426,18 @@ try {
       })
     });
 
-    console.log('Webhook response status:', response.status);
-    
-    // Parse the JSON response
     const responseData = await response.json();
-    console.log('Webhook response data:', responseData);
+    console.log('Response data:', responseData);
 
     if (responseData.redirectUrl) {
-      console.log('Redirecting to:', responseData.redirectUrl);
-      window.parent.postMessage({
-        type: 'REDIRECT',
-        url: responseData.redirectUrl
-      }, '*');
+      console.log('Got redirect URL:', responseData.redirectUrl);
+      window.location.href = responseData.redirectUrl;
     } else {
-      console.error('No redirect URL found in response');
+      console.error('No redirect URL in response');
     }
-  } catch (error) {
-    console.error('Error triggering webhook:', error);
-    // You might want to show an error message to the user here
-  }
+} catch (error) {
+    console.error('Error:', error);
+}
 };
   
   const togglePanel = (name: string) => {
@@ -525,6 +518,29 @@ useEffect(() => {
 
   fetchAllMetrics();
 }, [memberId, teamId]);
+
+useEffect(() => {
+  if (redirectUrl) {
+    console.log('Primary redirect effect triggered with URL:', redirectUrl);
+    const timer = setTimeout(() => {
+      console.log('Attempting primary redirect to:', redirectUrl);
+      window.location.href = redirectUrl;
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }
+}, [redirectUrl]);
+
+// Backup redirect mechanism
+useEffect(() => {
+  if (redirectUrl) {
+    console.log('Backup redirect effect triggered');
+    window.parent.postMessage({
+      type: 'REDIRECT',
+      url: redirectUrl
+    }, '*');
+  }
+}, [redirectUrl]);
 
 useLayoutEffect(() => {
   const updateHeight = () => {
