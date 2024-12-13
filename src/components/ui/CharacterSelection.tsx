@@ -537,31 +537,22 @@ useEffect(() => {
 
 useLayoutEffect(() => {
   const updateHeight = () => {
-    // Get the actual content height
     const contentHeight = document.body.scrollHeight;
-    
-    // Add some padding to ensure we have enough space
     const heightWithPadding = contentHeight + 40;
     
-    // Send message to parent
     window.parent.postMessage({
       type: 'RESIZE_IFRAME',
       height: heightWithPadding
     }, '*');
   };
 
-  // Create ResizeObserver to watch for content changes
   const resizeObserver = new ResizeObserver(() => {
-    setTimeout(updateHeight, 100); // Add slight delay to ensure content is rendered
+    setTimeout(updateHeight, 100);
   });
 
-  // Observe the body
   resizeObserver.observe(document.body);
-
-  // Also update height on initial render and when panels toggle
   updateHeight();
 
-  // Watch for image loads
   const images = document.querySelectorAll('img');
   images.forEach(img => {
     if (img.complete) {
@@ -571,22 +562,22 @@ useLayoutEffect(() => {
     }
   });
 
-  // Cleanup
   return () => {
     resizeObserver.disconnect();
     images.forEach(img => img.removeEventListener('load', updateHeight));
   };
-}, [activePanel]); // Add activePanel as dependency to update on panel changes
+}, [activePanel]);
 
-return (
-  <div className="min-h-screen w-full">
-    <div 
-      className="w-full h-auto bg-white rounded-[20px] pb-8"
-      style={{ 
-        boxShadow: '0 4px 8px rgba(0, 0, 0, 0.15)'
-      }}
-    >
-
+const CharacterSelection: React.FC = () => {
+  return (
+    <div className="min-h-screen w-full">
+      <div 
+        className="w-full h-auto bg-white rounded-[20px] pb-8"
+        style={{ 
+          boxShadow: '0 4px 8px rgba(0, 0, 0, 0.15)'
+        }}
+      >
+        
 {characters.map((character, index) => {
   // Get current character metrics
   const currentMetrics = characterMetrics[character.name];
