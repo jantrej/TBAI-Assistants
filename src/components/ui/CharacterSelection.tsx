@@ -401,7 +401,7 @@ const handleStart = async (character: Character) => {
     return;
   }
 
-  try {
+try {
     // Construct URL with encoded parameters
     const params = new URLSearchParams({
       member_ID: memberId
@@ -415,11 +415,11 @@ const handleStart = async (character: Character) => {
     console.log('Sending webhook request to:', fullUrl);
 
     const response = await fetch(fullUrl, {
-      method: 'POST', // Changed to POST
+      method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ // Added request body
+      body: JSON.stringify({
         member_ID: memberId,
         teamId: teamId || '',
         character: character.name
@@ -428,29 +428,18 @@ const handleStart = async (character: Character) => {
 
     console.log('Webhook response status:', response.status);
     
-    // Log response body for debugging
-    const responseText = await response.text();
-    console.log('Webhook response body:', responseText);
+    // Parse the JSON response
+    const responseData = await response.json();
+    console.log('Webhook response data:', responseData);
 
-    // Check for both OK (200) and redirect (302) status codes
-    if (response.ok || response.status === 302) {
-      console.log('Webhook triggered successfully');
-      
-      // If it's a redirect, get the Location header
-      const redirectUrl = response.headers.get('Location');
-      if (redirectUrl) {
-        console.log('Redirecting to:', redirectUrl);
-        window.parent.postMessage({
-          type: 'REDIRECT',
-          url: redirectUrl
-        }, '*');
-      } else {
-        window.parent.postMessage({
-          type: 'REDIRECT'
-        }, '*');
-      }
+    if (responseData.redirectUrl) {
+      console.log('Redirecting to:', responseData.redirectUrl);
+      window.parent.postMessage({
+        type: 'REDIRECT',
+        url: responseData.redirectUrl
+      }, '*');
     } else {
-      throw new Error(`Webhook failed with status ${response.status}: ${responseText}`);
+      console.error('No redirect URL found in response');
     }
   } catch (error) {
     console.error('Error triggering webhook:', error);
