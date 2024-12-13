@@ -586,6 +586,7 @@ return () => {
     images.forEach(img => img.removeEventListener('load', updateHeight));
   };
 }, [activePanel]);
+}); // Close useLayoutEffect
 
 return (
   <div className="min-h-screen w-full">
