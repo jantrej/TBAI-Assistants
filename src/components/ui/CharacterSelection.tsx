@@ -443,7 +443,11 @@ try {
 
     if (responseData?.redirectUrl) {
       console.log('Redirecting to:', responseData.redirectUrl);
-      window.top.location.href = responseData.redirectUrl;
+      if (window.top) {
+        window.top.location.href = responseData.redirectUrl;
+      } else {
+        window.location.href = responseData.redirectUrl;
+      }
     } else {
       console.error('No valid redirect URL found in response');
     }
