@@ -766,9 +766,13 @@ if (index === 0) {
   />
 )}
 </div>
+</div>
           );
         })}
       </div>
     </div>
   </div>
 );
+}
+
+export default CharacterSelection;
