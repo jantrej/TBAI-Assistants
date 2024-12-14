@@ -707,19 +707,29 @@ useEffect(() => {
         meetsUnlockCriteria = true;
       }
 
-      const wasLocked = previousLockStates[character.name];
-      
-      // Only proceed if character was locked and now meets criteria
-      if (wasLocked && meetsUnlockCriteria && !unlockingInProgress[character.name] && !showUnlockAnimation) {
+      // Check if animation was already shown previously
+      let animationWasShown = false;
+      if (memberId) {
         try {
-          // Check if we've already shown the animation
           const response = await fetch(
             `/api/unlock-animations?memberId=${memberId}&characterName=${character.name}`
           );
           const { shown } = await response.json();
+          animationWasShown = shown;
+        } catch (error) {
+          console.error('Error checking animation status:', error);
+        }
+      }
 
-          // Only show animation if we haven't shown it before
-          if (!shown && memberId) {
+      const wasLocked = previousLockStates[character.name];
+      
+      // Only show animation if character was locked, meets criteria, isn't being unlocked, 
+      // and hasn't shown animation before
+      if (wasLocked && meetsUnlockCriteria && !unlockingInProgress[character.name] && 
+          !showUnlockAnimation && !animationWasShown) {
+        try {
+          if (memberId) {
+            // Set unlocking in progress
             setUnlockingInProgress(prev => ({ ...prev, [character.name]: true }));
             setShowUnlockAnimation(character.name);
             
@@ -740,10 +750,10 @@ useEffect(() => {
         }
       }
 
-      // Update lock state
+      // Update lock state based on criteria and animation status
       setPreviousLockStates(prev => ({
         ...prev,
-        [character.name]: !meetsUnlockCriteria || unlockingInProgress[character.name]
+        [character.name]: !meetsUnlockCriteria || (unlockingInProgress[character.name] && !animationWasShown)
       }));
     }
   };
@@ -811,9 +821,9 @@ return (
 
   // Update character's locked status
    const updatedCharacter = {
-    ...character,
-    locked: character.locked && (!shouldBeUnlocked || unlockingInProgress[character.name])
-  };
+  ...character,
+  locked: previousLockStates[character.name] ?? character.locked
+};
           
           if (index === 0) {
             // Megan is always unlocked
@@ -953,9 +963,15 @@ return (
         performanceGoals={performanceGoals}
         showUnlockAnimation={showUnlockAnimation === character.name}
         onAnimationComplete={() => {
-          setShowUnlockAnimation(null);
-          setUnlockingInProgress(prev => ({ ...prev, [character.name]: false }));
-        }}
+  if (showUnlockAnimation === character.name) {
+    setShowUnlockAnimation(null);
+    setUnlockingInProgress(prev => ({ ...prev, [character.name]: false }));
+    setPreviousLockStates(prev => ({
+      ...prev,
+      [character.name]: false // Ensure character stays unlocked
+    }));
+  }
+}}
         characterName={character.name}
       />
     )}
