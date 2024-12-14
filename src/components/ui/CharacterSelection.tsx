@@ -937,7 +937,7 @@ return (
       </div>
 
       {/* Only show LockedOverlay if character is locked */}
-      {characterState?.isLocked && performanceGoals && (
+     {characterState?.isLocked && performanceGoals && (
               <LockedOverlay 
                 previousAssistant={prevCharacter?.name || ''}
                 isLastLocked={index === characters.length - 1}
@@ -952,10 +952,9 @@ return (
                 characterName={character.name}
               />
             )}
-          </div>
+          </motion.div>
         );
       })}
     </div>
   </div>
 );
-}
