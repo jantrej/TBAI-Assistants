@@ -454,6 +454,35 @@ const [redirectUrl, setRedirectUrl] = useState<string | null>(null);
 const [previousLockStates, setPreviousLockStates] = useState<{[key: string]: boolean}>({});
 const [showUnlockAnimation, setShowUnlockAnimation] = useState<string | null>(null);
 
+const checkAndShowAnimation = async (character: Character, shouldBeUnlocked: boolean) => {
+  if (!memberId) return;
+
+  try {
+    // Check if we've shown the animation before
+    const response = await fetch(`/api/unlock-animations?memberId=${memberId}&characterName=${character.name}`);
+    const { shown } = await response.json();
+
+    // If we haven't shown it and the character should be unlocked, show animation
+    if (!shown && shouldBeUnlocked) {
+      setShowUnlockAnimation(character.name);
+
+      // Record that we've shown the animation
+      await fetch('/api/unlock-animations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          memberId,
+          characterName: character.name
+        })
+      });
+    }
+  } catch (error) {
+    console.error('Error handling unlock animation:', error);
+  }
+};
+
 useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const tid = urlParams.get('teamId');
@@ -666,13 +695,11 @@ useEffect(() => {
 }, [memberId, teamId]);
 
 useEffect(() => {
-  // Loop through characters to check for unlock events
   characters.forEach((character) => {
     const currentMetrics = characterMetrics[character.name];
     const prevCharacter = characters[characters.indexOf(character) - 1];
     const prevCharacterMetrics = prevCharacter ? characterMetrics[prevCharacter.name] : null;
 
-    // Determine if character should be unlocked
     let shouldBeUnlocked = false;
     if (characters.indexOf(character) === 0) {
       shouldBeUnlocked = true;
@@ -684,20 +711,15 @@ useEffect(() => {
       shouldBeUnlocked = true;
     }
 
-    // If this is a new unlock (was locked before, should be unlocked now)
-    const wasLocked = previousLockStates[character.name];
-    if (wasLocked && shouldBeUnlocked) {
-      // Character just got unlocked! Trigger animation
-      setShowUnlockAnimation(character.name);
-    }
+    // Call our new function to handle the animation
+    checkAndShowAnimation(character, shouldBeUnlocked);
 
-    // Update previous lock state
     setPreviousLockStates(prev => ({
       ...prev,
       [character.name]: !shouldBeUnlocked
     }));
   });
-}, [characterMetrics, performanceGoals]);
+}, [characterMetrics, performanceGoals, memberId]);
 
 useLayoutEffect(() => {
   const updateHeight = () => {
