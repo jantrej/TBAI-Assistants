@@ -897,6 +897,7 @@ if (index > 0 && prevCharacterState && prevCharacterState.metrics && performance
                   className="absolute inset-0 overflow-hidden"
                 >
                   {!isInitialLoad && performanceGoals && (
+                  <div>
   <ScorePanel 
     characterName={character.name}
     memberId={memberId || ''}
