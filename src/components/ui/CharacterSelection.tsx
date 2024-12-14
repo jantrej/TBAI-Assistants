@@ -102,7 +102,7 @@ interface AnimatedStartButtonProps {
   showLockedText?: boolean;
 }
 
-const AnimatedStartButton: React.FC<AnimatedStartButtonProps> = ({ onComplete, isLocked, showLockedText }) => {
+const AnimatedStartButton: React.FC<AnimatedStartButtonProps> = ({ onStart, isLocked, showLockedText }) => {
   const [state, setState] = useState<'idle' | 'loading' | 'complete'>('idle')
   const [progress, setProgress] = useState(0)
 
