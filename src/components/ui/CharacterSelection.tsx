@@ -6,6 +6,101 @@ import { motion, AnimatePresence } from "framer-motion"
 import { ChevronRight, ChevronLeft, ChevronDown, ChevronUp } from 'lucide-react'
 import { AnimatedLock } from './AnimatedLock'
 
+function useCharacterState(
+  memberId: string | null,
+  performanceGoals: {
+    overall_performance_goal: number;
+    number_of_calls_average: number;
+  } | null
+) {
+  const [characterStates, setCharacterStates] = useState<{
+    [key: string]: {
+      isLocked: boolean;
+      animationShown: boolean;
+      metrics: any | null;
+    };
+  }>({});
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const initializationRef = useRef(false);
+
+  useEffect(() => {
+    if (!memberId || !performanceGoals || initializationRef.current) return;
+    
+    async function initializeCharacterStates() {
+      try {
+        // Fetch all character states in parallel
+        const statePromises = characters.map(async (character) => {
+          const [unlockRes, metricsRes] = await Promise.all([
+            fetch(`/api/unlock-animations?memberId=${memberId}&characterName=${character.name}`),
+            fetch(`/api/character-performance?memberId=${memberId}&characterName=${character.name}`)
+          ]);
+
+          const [unlockData, metricsData] = await Promise.all([
+            unlockRes.json(),
+            metricsRes.json()
+          ]);
+
+          return {
+            name: character.name,
+            isLocked: !unlockData.unlocked,
+            animationShown: unlockData.shown,
+            metrics: metricsData
+          };
+        });
+
+        const results = await Promise.all(statePromises);
+        
+        const newStates = results.reduce((acc, result) => {
+          acc[result.name] = {
+            isLocked: result.isLocked,
+            animationShown: result.animationShown,
+            metrics: result.metrics
+          };
+          return acc;
+        }, {});
+
+        setCharacterStates(newStates);
+        setIsInitialLoad(false);
+        initializationRef.current = true;
+      } catch (error) {
+        console.error('Error initializing character states:', error);
+        setIsInitialLoad(false);
+      }
+    }
+
+    initializeCharacterStates();
+  }, [memberId, performanceGoals]);
+
+  const unlockCharacter = useCallback(async (characterName: string) => {
+    if (!memberId) return;
+
+    try {
+      await fetch('/api/unlock-animations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ memberId, characterName })
+      });
+
+      setCharacterStates(prev => ({
+        ...prev,
+        [characterName]: {
+          ...prev[characterName],
+          isLocked: false,
+          animationShown: true
+        }
+      }));
+    } catch (error) {
+      console.error('Error unlocking character:', error);
+    }
+  }, [memberId]);
+
+  return {
+    characterStates,
+    isInitialLoad,
+    unlockCharacter
+  };
+}
+
 declare global {
   interface Window {
     $memberstackDom: {
@@ -263,37 +358,28 @@ function ScorePanel({
 }) {
   const [metrics, setMetrics] = useState<PerformanceMetrics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const previousMetrics = useRef<PerformanceMetrics | null>(null);
   
-
   useEffect(() => {
-    // Modify the fetchMetrics function in ScorePanel:
-const fetchMetrics = async () => {
-  try {
-    console.log(`Fetching metrics for ${characterName} with memberId ${memberId}`);
-    const response = await fetch(
-      `/api/character-performance?memberId=${memberId}&characterName=${characterName}`
-    );
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Failed to fetch metrics:', errorText);
-      throw new Error(errorText);
-    }
-    
-    const data = await response.json();
-    console.log('Received metrics:', data);
-    
-    if (!data) {
-      throw new Error('No data received');
-    }
-    
-    setMetrics(data);
-  } catch (error) {
-    console.error('Error fetching metrics:', error);
-  } finally {
-    setIsLoading(false);
-  }
-};
+    const fetchMetrics = async () => {
+      try {
+        const response = await fetch(
+          `/api/character-performance?memberId=${memberId}&characterName=${characterName}`
+        );
+        
+        if (!response.ok) {
+          throw new Error(await response.text());
+        }
+        
+        const data = await response.json();
+        previousMetrics.current = metrics;  // Save current metrics before updating
+        setMetrics(data);
+      } catch (error) {
+        console.error('Error fetching metrics:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
     if (memberId && characterName) {
       fetchMetrics();
@@ -308,12 +394,30 @@ const fetchMetrics = async () => {
     }, '*');
   };
 
-  if (isLoading) {
-    return <div className="text-center py-4">Loading metrics...</div>;
-  }
+  // Use previous metrics while loading
+  const displayMetrics = metrics || previousMetrics.current;
 
-  if (!metrics) {
-    return <div className="text-center py-4">No performance data available</div>;
+  if (!displayMetrics && isLoading) {
+    return (
+      <div className="w-full text-sm h-[320px] flex flex-col">
+        <div className="flex-grow">
+          {/* Skeleton loader matching final content structure */}
+          <h3 className="text-sm font-semibold mb-2 bg-white py-2">
+            Score based on past {performanceGoals.number_of_calls_average} calls
+          </h3>
+          {[...Array(7)].map((_, i) => (
+            <div key={i} className="bg-[#f8fdf6] p-3 rounded-lg mb-3 mr-2">
+              <div className="animate-pulse flex justify-between items-center mb-1">
+                <div className="h-4 bg-gray-200 rounded w-24"></div>
+                <div className="h-4 bg-gray-200 rounded w-12"></div>
+              </div>
+              <div className="h-2 bg-gray-200 rounded-full w-full"></div>
+            </div>
+          ))}
+        </div>
+        <div className="h-12"></div> {/* Space for button */}
+      </div>
+    );
   }
 
   const categories = [
@@ -333,7 +437,7 @@ const fetchMetrics = async () => {
         <div className="flex-grow overflow-y-auto scrollbar-thin">
           <h3 className="text-sm font-semibold mb-2 sticky top-0 bg-white py-2 z-10">
             Score based on past {performanceGoals.number_of_calls_average} calls
-            </h3>
+          </h3>
           {categories.map(({ key, label }) => (
             <div key={key} className="bg-[#f8fdf6] p-3 rounded-lg mb-3 mr-2">
               <div className="flex justify-between items-center mb-1">
@@ -341,13 +445,13 @@ const fetchMetrics = async () => {
                   {label}
                 </span>
                 <span className={`font-bold text-green-500 ${key === 'overall_performance' ? 'text-lg' : 'text-xs'}`}>
-                  {metrics[key as keyof PerformanceMetrics] || 0}/100
+                  {displayMetrics[key as keyof PerformanceMetrics] || 0}/100
                 </span>
               </div>
               <div className={`bg-gray-200 rounded-full overflow-hidden ${key === 'overall_performance' ? 'h-3' : 'h-2'}`}>
                 <div 
-                  className="h-full bg-green-500 rounded-full"
-                  style={{ width: `${metrics[key as keyof PerformanceMetrics] || 0}%` }}
+                  className="h-full bg-green-500 rounded-full transition-all duration-300"
+                  style={{ width: `${displayMetrics[key as keyof PerformanceMetrics] || 0}%` }}
                 />
               </div>
             </div>
@@ -454,12 +558,18 @@ useEffect(() => {
 
 export default function CharacterSelection() {
   const [teamId, setTeamId] = useState<string | null>(null);
-const [unlockingInProgress, setUnlockingInProgress] = useState<{[key: string]: boolean}>({});
-const [activePanel, setActivePanel] = useState<{ [key: string]: 'description' | 'scores' }>({
-  Megan: 'description',
-  David: 'description',
-  Linda: 'description'
-});
+  const [activePanel, setActivePanel] = useState<{ [key: string]: 'description' | 'scores' }>({
+    Megan: 'description',
+    David: 'description',
+    Linda: 'description'
+  });
+  const [memberId, setMemberId] = useState<string | null>(null);
+  const [performanceGoals, setPerformanceGoals] = useState<{
+    overall_performance_goal: number;
+    number_of_calls_average: number;
+  } | null>(null);  // Start as null since we'll fetch it
+  
+  const { characterStates, isInitialLoad, unlockCharacter } = useCharacterState(memberId, performanceGoals);
 
 const [memberId, setMemberId] = useState<string | null>(null);
 const [isLoading, setIsLoading] = useState(true);
@@ -781,187 +891,164 @@ return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-5">
 
 {characters.map((character, index) => {
-  const currentMetrics = characterMetrics[character.name];
+  // Skip rendering if we're still in initial load
+  if (isInitialLoad) {
+    return (
+      <div key={character.name} className="animate-pulse">
+        <div className="h-[600px] bg-gray-100 rounded-[20px]"></div>
+      </div>
+    );
+  }
+
+  const characterState = characterStates[character.name];
   const prevCharacter = index > 0 ? characters[index - 1] : null;
-  const prevCharacterMetrics = prevCharacter ? characterMetrics[prevCharacter.name] : null;
+  const prevCharacterState = prevCharacter ? characterStates[prevCharacter.name] : null;
 
-  // Determine if character should be unlocked
-  let shouldBeUnlocked = false;
-  if (index === 0) {
-    shouldBeUnlocked = true;
-  } else if (
-    prevCharacterMetrics && 
-    prevCharacterMetrics.overall_performance >= performanceGoals.overall_performance_goal &&
-    prevCharacterMetrics.total_calls >= performanceGoals.number_of_calls_average &&
-    !unlockingInProgress[character.name]  // Check if not currently unlocking
-  ) {
-    shouldBeUnlocked = true;
+  // Determine if this character should be unlocked
+  let shouldBeUnlocked = index === 0; // Megan is always unlocked
+  if (index > 0 && prevCharacterState && prevCharacterState.metrics) {
+    const meetsPerformance = prevCharacterState.metrics.overall_performance >= performanceGoals.overall_performance_goal;
+    const meetsCalls = prevCharacterState.metrics.total_calls >= performanceGoals.number_of_calls_average;
+    shouldBeUnlocked = meetsPerformance && meetsCalls;
   }
 
-  // Update character's locked status
-   const updatedCharacter = {
-  ...character,
-  locked: previousLockStates[character.name] ?? character.locked
-};
-          
-          if (index === 0) {
-            // Megan is always unlocked
-            shouldBeUnlocked = true;
-          } else if (prevCharacterMetrics && prevCharacterMetrics.overall_performance >= 85) {
-            // Character should be unlocked if previous character has performance >= 85
-            shouldBeUnlocked = true;
-          }
+  // If character should be unlocked but isn't yet, trigger unlock
+  if (shouldBeUnlocked && characterState?.isLocked && !characterState.animationShown) {
+    unlockCharacter(character.name);
+  }
 
-          // Debug log
-          console.log(`${character.name} unlock status:`, {
-            previousCharacter: prevCharacter?.name,
-            previousPerformance: prevCharacterMetrics?.overall_performance,
-            shouldBeUnlocked,
-            isLocked: updatedCharacter.locked
-          });
+  // Determine if we should show unlock animation
+  const showUnlockAnimation = shouldBeUnlocked && characterState?.isLocked && !characterState.animationShown;
 
-          return (
+  return (
+    <div 
+      key={character.name} 
+      className="relative rounded-[20px] overflow-hidden" 
+      style={{ 
+        boxShadow: '0 4px 8px rgba(0, 0, 0, 0.15)'
+      }}
+    >
+      <div className="p-4 flex flex-col items-center text-center">
+        {/* Character card content remains the same */}
+        <div className="w-full px-5 mb-2">
+          <div 
+            className="w-32 h-32 mx-auto relative overflow-hidden rounded-[20px] transition-all duration-300 ease-in-out" 
+            style={{ 
+              perspective: '1000px',
+            }}
+          >
             <div 
-  key={character.name} 
-  className="relative rounded-[20px] overflow-hidden" 
-  style={{ 
-    boxShadow: '0 4px 8px rgba(0, 0, 0, 0.15)'
-  }}
->
-              <div className="p-4 flex flex-col items-center text-center">
-                <div className="w-full px-5 mb-2">
-                  <div 
-  className="w-32 h-32 mx-auto relative overflow-hidden rounded-[20px] transition-all duration-300 ease-in-out" 
-  style={{ 
-    perspective: '1000px',
-  }}
->
-  <div 
-    className="w-full h-full absolute inset-0" 
-    style={{ 
-      border: `7px solid ${
-        character.name === 'Megan'
-          ? 'rgba(35, 197, 95, 0.5)'
-          : character.name === 'David'
-            ? 'rgba(250, 162, 72, 0.5)'
-            : 'rgba(236, 27, 38, 0.5)'
-      }`,
-      borderRadius: '20px',
-      zIndex: 2
-    }}
-  />
-  <div className="w-full h-full relative">
-    <Image
-      src={character.imageSrc}
-      alt={character.name}
-      fill
-      className="object-cover rounded-[14px]"
-    />
-  </div>
-</div>
-                </div>
-                <div className="w-full mb-2 flex flex-col items-center">
-                  <div className="flex items-center gap-2 py-1">
-                    <h2 className="text-2xl font-bold text-black">
-                      {character.name}
-                    </h2>
-                    <div
-                      className="px-3 py-1 rounded-full text-white font-semibold text-sm"
-                      style={{ backgroundColor: character.color }}
-                    >
-                      {character.difficulty.toUpperCase()}
-                    </div>
-                  </div>
-                  <AnimatedStartButton 
-  onStart={() => handleStart(character)}
-  isLocked={updatedCharacter.locked}
-  showLockedText={updatedCharacter.locked}
-/>
-                </div>
-                <div className="relative w-full mb-6 flex-grow">
-                  <button 
-                    onClick={() => togglePanel(character.name)}
-                    className="w-full py-3 rounded-[20px] text-black font-semibold text-lg transition-all hover:opacity-90 hover:shadow-lg bg-white shadow-md mb-6"
-                  >
-                    <span>
-                      {activePanel[character.name] === 'description' ? 'View Performance' : 'Back to Description'}
-                    </span>
-                    {activePanel[character.name] === 'description' ? (
-                      <ChevronDown size={20} className="inline-block ml-2" />
-                    ) : (
-                      <ChevronUp size={20} className="inline-block ml-2" />
-                    )}
-                  </button>
-<div className="min-h-[300px] overflow-hidden relative">
-  <AnimatePresence initial={false}>
-    {activePanel[character.name] === 'description' ? (
-      <motion.div
-        key="description"
-        initial={{ y: "100%", opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        exit={{ y: "-100%", opacity: 0 }}
-        transition={{ type: "tween", ease: "easeInOut", duration: 0.3 }}
-        className="absolute inset-0"
-      >
-        <p className="text-gray-600 text-base leading-relaxed text-center flex items-center justify-center h-full">
-          {character.description}
-        </p>
-      </motion.div>
-    ) : (
-      <motion.div
-  key="scores"
-  initial={{ y: "-100%", opacity: 0 }}
-  animate={{ y: 0, opacity: 1 }}
-  exit={{ y: "100%", opacity: 0 }}
-  transition={{ type: "tween", ease: "easeInOut", duration: 0.3 }}
-  className="absolute inset-0 overflow-hidden"
->
-  {isLoading ? (
-    <div className="flex items-center justify-center h-full">
-      <div className="animate-pulse">
-        <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
-        <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-      </div>
-    </div>
-  ) : (
-    <ScorePanel 
-      characterName={character.name}
-      memberId={memberId || ''}
-      teamId={teamId}
-      performanceGoals={performanceGoals}
-    />
-  )}
-</motion.div>
-    )}
-  </AnimatePresence>
-</div>
-                </div>
-              </div>
-             {updatedCharacter.locked && (
-      <LockedOverlay 
-        previousAssistant={prevCharacter?.name || ''}
-        isLastLocked={index === characters.length - 1}
-        difficulty={character.difficulty}
-        performanceGoals={performanceGoals}
-        showUnlockAnimation={showUnlockAnimation === character.name}
-        onAnimationComplete={() => {
-  if (showUnlockAnimation === character.name) {
-    setShowUnlockAnimation(null);
-    setUnlockingInProgress(prev => ({ ...prev, [character.name]: false }));
-    // Ensure unlocked state persists
-    setPreviousLockStates(prev => ({
-      ...prev,
-      [character.name]: false // Keep character unlocked
-    }));
-  }
-}}
-        characterName={character.name}
-      />
-    )}
+              className="w-full h-full absolute inset-0" 
+              style={{ 
+                border: `7px solid ${
+                  character.name === 'Megan'
+                    ? 'rgba(35, 197, 95, 0.5)'
+                    : character.name === 'David'
+                      ? 'rgba(250, 162, 72, 0.5)'
+                      : 'rgba(236, 27, 38, 0.5)'
+                }`,
+                borderRadius: '20px',
+                zIndex: 2
+              }}
+            />
+            <div className="w-full h-full relative">
+              <Image
+                src={character.imageSrc}
+                alt={character.name}
+                fill
+                className="object-cover rounded-[14px]"
+              />
             </div>
-          );
-        })}
+          </div>
+        </div>
+
+        <div className="w-full mb-2 flex flex-col items-center">
+          <div className="flex items-center gap-2 py-1">
+            <h2 className="text-2xl font-bold text-black">
+              {character.name}
+            </h2>
+            <div
+              className="px-3 py-1 rounded-full text-white font-semibold text-sm"
+              style={{ backgroundColor: character.color }}
+            >
+              {character.difficulty.toUpperCase()}
+            </div>
+          </div>
+          <AnimatedStartButton 
+            onStart={() => handleStart(character)}
+            isLocked={characterState?.isLocked}
+            showLockedText={characterState?.isLocked}
+          />
+        </div>
+
+        <div className="relative w-full mb-6 flex-grow">
+          <button 
+            onClick={() => togglePanel(character.name)}
+            className="w-full py-3 rounded-[20px] text-black font-semibold text-lg transition-all hover:opacity-90 hover:shadow-lg bg-white shadow-md mb-6"
+          >
+            <span>
+              {activePanel[character.name] === 'description' ? 'View Performance' : 'Back to Description'}
+            </span>
+            {activePanel[character.name] === 'description' ? (
+              <ChevronDown size={20} className="inline-block ml-2" />
+            ) : (
+              <ChevronUp size={20} className="inline-block ml-2" />
+            )}
+          </button>
+
+          <div className="min-h-[300px] overflow-hidden relative">
+            <AnimatePresence initial={false}>
+              {activePanel[character.name] === 'description' ? (
+                <motion.div
+                  key="description"
+                  initial={{ y: "100%", opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  exit={{ y: "-100%", opacity: 0 }}
+                  transition={{ type: "tween", ease: "easeInOut", duration: 0.3 }}
+                  className="absolute inset-0"
+                >
+                  <p className="text-gray-600 text-base leading-relaxed text-center flex items-center justify-center h-full">
+                    {character.description}
+                  </p>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="scores"
+                  initial={{ y: "-100%", opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  exit={{ y: "100%", opacity: 0 }}
+                  transition={{ type: "tween", ease: "easeInOut", duration: 0.3 }}
+                  className="absolute inset-0 overflow-hidden"
+                >
+                  <ScorePanel 
+                    characterName={character.name}
+                    memberId={memberId || ''}
+                    teamId={teamId}
+                    performanceGoals={performanceGoals}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
       </div>
+
+      {/* Only show LockedOverlay if character is locked */}
+      {characterState?.isLocked && (
+        <LockedOverlay 
+          previousAssistant={prevCharacter?.name || ''}
+          isLastLocked={index === characters.length - 1}
+          difficulty={character.difficulty}
+          performanceGoals={performanceGoals}
+          showUnlockAnimation={showUnlockAnimation}
+          onAnimationComplete={() => {
+            if (showUnlockAnimation) {
+              unlockCharacter(character.name);
+            }
+          }}
+          characterName={character.name}
+        />
+      )}
     </div>
-);
-}
+  );
+})}
