@@ -381,6 +381,7 @@ function LockedOverlay({
   };
   showUnlockAnimation?: boolean;
   onAnimationComplete?: () => void;
+  characterName: string;
 }) {
   const glowColor = 
     difficulty === 'Easy' 
@@ -388,6 +389,18 @@ function LockedOverlay({
       : difficulty === 'Intermediate'
         ? 'rgba(252, 161, 71, 0.5)'
         : 'rgba(220, 38, 38, 0.5)';
+
+useEffect(() => {
+    if (showUnlockAnimation) {
+      const timeout = setTimeout(() => {
+        if (onAnimationComplete) {
+          onAnimationComplete();
+        }
+      }, 2000); // Match this with your animation duration
+
+      return () => clearTimeout(timeout);
+    }
+  }, [showUnlockAnimation, onAnimationComplete]);
 
   return (
     <div 
@@ -441,6 +454,7 @@ function LockedOverlay({
 
 export default function CharacterSelection() {
   const [teamId, setTeamId] = useState<string | null>(null);
+const [unlockingInProgress, setUnlockingInProgress] = useState<{[key: string]: boolean}>({});
 const [activePanel, setActivePanel] = useState<{ [key: string]: 'description' | 'scores' }>({
   Megan: 'description',
   David: 'description',
@@ -747,26 +761,32 @@ useEffect(() => {
     const prevCharacter = characters[characters.indexOf(character) - 1];
     const prevCharacterMetrics = prevCharacter ? characterMetrics[prevCharacter.name] : null;
 
+    // Check if character should be unlocked
     let shouldBeUnlocked = false;
     if (characters.indexOf(character) === 0) {
       shouldBeUnlocked = true;
     } else if (
       prevCharacterMetrics && 
       prevCharacterMetrics.overall_performance >= performanceGoals.overall_performance_goal &&
-      prevCharacterMetrics.total_calls >= performanceGoals.number_of_calls_average
+      prevCharacterMetrics.total_calls >= performanceGoals.number_of_calls_average &&
+      !unlockingInProgress[character.name]  // Check if not currently unlocking
     ) {
-      shouldBeUnlocked = true;
+      const wasLocked = previousLockStates[character.name];
+      if (wasLocked) {
+        // Start the unlock sequence
+        setUnlockingInProgress(prev => ({ ...prev, [character.name]: true }));
+        setShowUnlockAnimation(character.name);
+      } else {
+        shouldBeUnlocked = true;
+      }
     }
-
-    // Call our new function to handle the animation
-    checkAndShowAnimation(character, shouldBeUnlocked);
 
     setPreviousLockStates(prev => ({
       ...prev,
       [character.name]: !shouldBeUnlocked
     }));
   });
-}, [characterMetrics, performanceGoals, memberId]);
+}, [characterMetrics, performanceGoals]);
 
 useLayoutEffect(() => {
   const updateHeight = () => {
@@ -807,30 +827,28 @@ return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-5">
 
 {characters.map((character, index) => {
-  // Get current character metrics
   const currentMetrics = characterMetrics[character.name];
-  
-  // Get previous character and their metrics
   const prevCharacter = index > 0 ? characters[index - 1] : null;
   const prevCharacterMetrics = prevCharacter ? characterMetrics[prevCharacter.name] : null;
 
   // Determine if character should be unlocked
   let shouldBeUnlocked = false;
-if (index === 0) {
-  shouldBeUnlocked = true;
-} else if (
-  prevCharacterMetrics && 
-  prevCharacterMetrics.overall_performance >= performanceGoals.overall_performance_goal &&
-  prevCharacterMetrics.total_calls >= performanceGoals.number_of_calls_average
-) {
-  shouldBeUnlocked = true;
-}
+  if (index === 0) {
+    shouldBeUnlocked = true;
+  } else if (
+    prevCharacterMetrics && 
+    prevCharacterMetrics.overall_performance >= performanceGoals.overall_performance_goal &&
+    prevCharacterMetrics.total_calls >= performanceGoals.number_of_calls_average &&
+    !unlockingInProgress[character.name]  // Check if not currently unlocking
+  ) {
+    shouldBeUnlocked = true;
+  }
 
   // Update character's locked status
-  const updatedCharacter = {
-  ...character,
-  locked: character.locked && (!shouldBeUnlocked || showUnlockAnimation === character.name)
-};
+   const updatedCharacter = {
+    ...character,
+    locked: character.locked && (!shouldBeUnlocked || unlockingInProgress[character.name])
+  };
           
           if (index === 0) {
             // Megan is always unlocked
@@ -962,16 +980,20 @@ if (index === 0) {
 </div>
                 </div>
               </div>
-              {updatedCharacter.locked && (
-  <LockedOverlay 
-  previousAssistant={prevCharacter?.name || ''}
-  isLastLocked={index === characters.length - 1}
-  difficulty={character.difficulty}
-  performanceGoals={performanceGoals}
-  showUnlockAnimation={showUnlockAnimation === character.name}
-  onAnimationComplete={() => setShowUnlockAnimation(null)}
-/>
-)}
+             {updatedCharacter.locked && (
+      <LockedOverlay 
+        previousAssistant={prevCharacter?.name || ''}
+        isLastLocked={index === characters.length - 1}
+        difficulty={character.difficulty}
+        performanceGoals={performanceGoals}
+        showUnlockAnimation={showUnlockAnimation === character.name}
+        onAnimationComplete={() => {
+          setShowUnlockAnimation(null);
+          setUnlockingInProgress(prev => ({ ...prev, [character.name]: false }));
+        }}
+        characterName={character.name}
+      />
+    )}
             </div>
           );
         })}
