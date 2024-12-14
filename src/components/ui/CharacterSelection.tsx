@@ -368,7 +368,7 @@ function ScorePanel({
   performanceGoals: {
     overall_performance_goal: number;
     number_of_calls_average: number;
-  } | null; // Add | null here
+  }; // Remove | null here since we're handling it with optional chaining
 }) {
   const [metrics, setMetrics] = useState<PerformanceMetrics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -412,13 +412,13 @@ function ScorePanel({
   const displayMetrics = metrics || previousMetrics.current;
 
   if (!displayMetrics && isLoading) {
-    return (
-      <div className="w-full text-sm h-[320px] flex flex-col">
-        <div className="flex-grow">
-          {/* Skeleton loader matching final content structure */}
-          <h3 className="text-sm font-semibold mb-2 bg-white py-2">
-            Score based on past {performanceGoals.number_of_calls_average} calls
-          </h3>
+  return (
+    <div className="w-full text-sm h-[320px] flex flex-col">
+      <div className="flex-grow">
+        {/* Skeleton loader matching final content structure */}
+        <h3 className="text-sm font-semibold mb-2 bg-white py-2">
+          Score based on past {performanceGoals?.number_of_calls_average || 0} calls
+        </h3>
           {[...Array(7)].map((_, i) => (
             <div key={i} className="bg-[#f8fdf6] p-3 rounded-lg mb-3 mr-2">
               <div className="animate-pulse flex justify-between items-center mb-1">
