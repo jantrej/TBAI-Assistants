@@ -575,28 +575,11 @@ const [memberId, setMemberId] = useState<string | null>(null);
 const [isLoading, setIsLoading] = useState(true);
 const [redirectUrl, setRedirectUrl] = useState<string | null>(null);
 
-const [previousLockStates, setPreviousLockStates] = useState<{[key: string]: boolean}>({});
-const [showUnlockAnimation, setShowUnlockAnimation] = useState<string | null>(null);
-
 useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const tid = urlParams.get('teamId');
     setTeamId(tid);
   }, []);
-
-const [characterMetrics, setCharacterMetrics] = useState<{
-  [key: string]: {
-    overall_performance: number;
-    engagement: number;
-    objection_handling: number;
-    information_gathering: number;
-    program_explanation: number;
-    closing_skills: number;
-    overall_effectiveness: number;
-    total_calls: number;
-    past_calls_count: number; // Added this line
-  } | null;
-}>({});
 
 const [performanceGoals, setPerformanceGoals] = useState({
   overall_performance_goal: 85,
@@ -742,115 +725,6 @@ useEffect(() => {
 
   fetchPerformanceGoals();
 }, []);
-
-useEffect(() => {
-  const fetchAllMetrics = async () => {
-  if (!memberId || !teamId) {
-    console.log('Missing memberId or teamId:', { memberId, teamId });
-    return;
-  }
-  
-  setIsLoading(true);
-  
-  try {
-    // Fetch performance goals first
-    const goalsResponse = await fetch(`/api/performance-goals?teamId=${teamId}`);
-    const goals = await goalsResponse.json();
-    setPerformanceGoals(goals);
-
-    // Fetch all data in parallel
-    const characterPromises = characters.map(async (character) => {
-      // Fetch both metrics and unlock status in parallel
-      const [metricsRes, unlockRes] = await Promise.all([
-        fetch(`/api/character-performance?memberId=${memberId}&characterName=${character.name}`),
-        fetch(`/api/unlock-animations?memberId=${memberId}&characterName=${character.name}`)
-      ]);
-
-      const [metrics, unlockStatus] = await Promise.all([
-        metricsRes.json(),
-        unlockRes.json()
-      ]);
-
-      return {
-        name: character.name,
-        metrics: metrics || null,
-        unlocked: unlockStatus.unlocked || false
-      };
-    });
-
-    const results = await Promise.all(characterPromises);
-
-    // Build new states
-    const newMetrics = {};
-    const newLockStates = {};
-
-    results.forEach((result) => {
-      newMetrics[result.name] = result.metrics;
-      newLockStates[result.name] = !result.unlocked; // false means unlocked
-    });
-
-    // Set all states at once
-    setCharacterMetrics(newMetrics);
-    setPreviousLockStates(newLockStates);
-    
-  } catch (error) {
-    console.error('Error fetching data:', error);
-  } finally {
-    setIsLoading(false);
-  }
-};
-
-useEffect(() => {
-  const handleCharacterUnlocks = async () => {
-    if (!memberId || isLoading) return;
-
-    const newLockStates = { ...previousLockStates };
-    let needsUpdate = false;
-
-    for (const character of characters) {
-      const index = characters.indexOf(character);
-      const prevCharacter = index > 0 ? characters[index - 1] : null;
-      const prevCharacterMetrics = prevCharacter ? characterMetrics[prevCharacter.name] : null;
-
-      let shouldBeUnlocked = false;
-      if (index === 0) {
-        shouldBeUnlocked = true;
-      } else if (
-        prevCharacterMetrics && 
-        prevCharacterMetrics.overall_performance >= performanceGoals.overall_performance_goal &&
-        prevCharacterMetrics.total_calls >= performanceGoals.number_of_calls_average
-      ) {
-        shouldBeUnlocked = true;
-      }
-
-      const currentlyLocked = previousLockStates[character.name];
-      
-      if (currentlyLocked && shouldBeUnlocked && !unlockingInProgress[character.name] && !showUnlockAnimation) {
-        try {
-          setUnlockingInProgress(prev => ({ ...prev, [character.name]: true }));
-          setShowUnlockAnimation(character.name);
-          
-          await fetch('/api/unlock-animations', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ memberId, characterName: character.name })
-          });
-
-          newLockStates[character.name] = false;
-          needsUpdate = true;
-        } catch (error) {
-          console.error('Error handling unlock animation:', error);
-        }
-      }
-    }
-
-    if (needsUpdate) {
-      setPreviousLockStates(newLockStates);
-    }
-  };
-
-  handleCharacterUnlocks();
-}, [memberId, characterMetrics, performanceGoals, showUnlockAnimation, unlockingInProgress, previousLockStates, isLoading]);
 
 useLayoutEffect(() => {
   const updateHeight = () => {
