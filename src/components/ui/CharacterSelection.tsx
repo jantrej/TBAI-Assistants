@@ -120,7 +120,6 @@ const AnimatedStartButton: React.FC<AnimatedStartButtonProps> = ({ onStart, isLo
           requestAnimationFrame(updateProgress);
         } else {
           setState('complete');
-          onComplete();
         }
       };
 
