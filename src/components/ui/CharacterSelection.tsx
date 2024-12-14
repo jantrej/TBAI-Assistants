@@ -400,18 +400,12 @@ function LockedOverlay({
       <div className="w-[400px] h-[400px] p-6 pt-16 text-center flex flex-col items-center justify-start">
         <div>
           <div className="flex justify-center items-center gap-4 mb-8 w-full">
-            <Image
-              src={difficulty === 'Expert' 
-                ? "https://res.cloudinary.com/drkudvyog/image/upload/v1733371487/red_white_bold_syqkx8.png"
-                : difficulty === 'Intermediate'
-                  ? "https://res.cloudinary.com/drkudvyog/image/upload/v1733371487/orange_white_bold_d1mnnd.png"
-                  : "https://res.cloudinary.com/drkudvyog/image/upload/v1733371487/green_white_bold_syqkx8.png"}
-              alt="Locked"
-              width={64}
-              height={64}
-              className="object-contain"
-            />
-          </div>
+  <AnimatedLock 
+    characterName={previousAssistant}
+    isLocked={true}
+    onUnlockShown={() => {}}
+  />
+</div>
           <h3 className="text-3xl font-bold text-white mb-4">Character Locked</h3>
           <p className="text-white text-xl mb-8">
             {isLastLocked 
