@@ -94,61 +94,72 @@ export const AnimatedLock: React.FC<AnimatedLockProps> = ({ characterName, isLoc
 
   return (
     <div className="relative flex items-center justify-center h-16 w-16">
-      <motion.canvas
-        ref={canvasRef}
-        className="absolute inset-0 w-full h-full"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: showParticles ? 1 : 0 }}
-        transition={{ duration: 1 }}
-      />
-      <AnimatePresence>
-        {showLock && (
-          <motion.div
-            className="relative z-10"
-            initial={{ scale: 1, opacity: 1, rotate: 0 }}
-            animate={{ 
-              scale: isLocked ? 1 : [1, 1.5, 1.5],
-              rotate: isLocked ? 0 : 360,
-              opacity: 1
-            }}
-            exit={{ scale: 0, opacity: 0, rotate: 720 }}
-            transition={{ 
-              duration: 1.5,
-              scale: { times: [0, 0.5, 1], ease: "easeInOut" },
-              rotate: { duration: 1.5, ease: "easeInOut" },
-              opacity: { duration: 0.5, delay: 2.5 }
-            }}
-          >
-            <motion.div
-              initial={{ opacity: 1 }}
-              animate={{ opacity: isLocked ? 1 : 0 }}
-              transition={{ duration: 0.5 }}
-            >
-              <Image
-                src="https://res.cloudinary.com/drkudvyog/image/upload/v1734127851/Locked_icon_nhftkr.png"
-                alt="Locked"
-                width={64}
-                height={64}
-                className="relative z-20"
-              />
-            </motion.div>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: isLocked ? 0 : 1 }}
-              transition={{ duration: 0.5 }}
-              className="absolute top-0 left-0"
-            >
-              <Image
-                src="https://res.cloudinary.com/drkudvyog/image/upload/v1734127851/Unlock_icon_cc0usb.png"
-                alt="Unlocked"
-                width={64}
-                height={64}
-                className="z-20"
-              />
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+  <motion.canvas
+    ref={canvasRef}
+    className="absolute inset-0 w-full h-full"
+    initial={{ opacity: 0 }}
+    animate={{ opacity: showParticles ? 1 : 0 }}
+    transition={{ duration: 1 }}
+  />
+  <AnimatePresence>
+    {showLock && (
+      <motion.div
+        className="relative z-10"
+        initial={{ scale: 1, opacity: 1, rotate: 0 }}
+        animate={{ 
+          scale: isLocked ? 1 : [1, 1.5, 1.5],
+          rotate: isLocked ? 0 : 360,
+          opacity: 1
+        }}
+        exit={{ scale: 0, opacity: 0, rotate: 720 }}
+        transition={{ 
+          duration: 1.5,
+          scale: { times: [0, 0.5, 1], ease: "easeInOut" },
+          rotate: { duration: 1.5, ease: "easeInOut" },
+          opacity: { duration: 0.5, delay: 2.5 }
+        }}
+      >
+        {/* Add circular grey background */}
+        <div className="absolute inset-0 bg-[#4A4A4A] rounded-full" style={{ transform: 'scale(1.2)' }} />
+        
+        {/* Locked state */}
+        <motion.div
+          initial={{ opacity: 1 }}
+          animate={{ opacity: isLocked ? 1 : 0 }}
+          transition={{ duration: 0.5 }}
+          className="relative"
+        >
+          <div className="relative w-16 h-16 flex items-center justify-center">
+            <Image
+              src="https://res.cloudinary.com/drkudvyog/image/upload/v1734127851/Locked_icon_nhftkr.png"
+              alt="Locked"
+              width={48}
+              height={48}
+              className="relative z-20"
+              style={{ filter: 'drop-shadow(0px 0px 1px rgba(0,0,0,0.2))' }}
+            />
+          </div>
+        </motion.div>
+
+        {/* Unlocked state */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: isLocked ? 0 : 1 }}
+          transition={{ duration: 0.5 }}
+          className="absolute top-0 left-0 w-full h-full flex items-center justify-center"
+        >
+          <Image
+            src="https://res.cloudinary.com/drkudvyog/image/upload/v1734127851/Unlock_icon_cc0usb.png"
+            alt="Unlocked"
+            width={48}
+            height={48}
+            className="z-20"
+            style={{ filter: 'drop-shadow(0px 0px 1px rgba(0,0,0,0.2))' }}
+          />
+        </motion.div>
+      </motion.div>
+    )}
+  </AnimatePresence>
+</div>
   )
 }
