@@ -50,14 +50,14 @@ function useCharacterState(
 
         const results = await Promise.all(statePromises);
         
-        const newStates = results.reduce((acc, result) => {
-          acc[result.name] = {
-            isLocked: result.isLocked,
-            animationShown: result.animationShown,
-            metrics: result.metrics
-          };
-          return acc;
-        }, {});
+       const newStates = results.reduce<Record<string, CharacterState>>((acc, result: CharacterStateResult) => {
+  acc[result.name] = {
+    isLocked: result.isLocked,
+    animationShown: result.animationShown,
+    metrics: result.metrics
+  };
+  return acc;
+}, {});
 
         setCharacterStates(newStates);
         setIsInitialLoad(false);
@@ -196,6 +196,20 @@ interface AnimatedStartButtonProps {
   onStart: () => void;
   isLocked?: boolean;
   showLockedText?: boolean;
+}
+
+interface CharacterState {
+  isLocked: boolean;
+  animationShown: boolean;
+  metrics: any;  // You can make this more specific based on your metrics type
+}
+
+// Then define interface for the result object
+interface CharacterStateResult {
+  name: string;
+  isLocked: boolean;
+  animationShown: boolean;
+  metrics: any;
 }
 
 const AnimatedStartButton: React.FC<AnimatedStartButtonProps> = ({ onStart, isLocked, showLockedText }) => {
