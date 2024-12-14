@@ -635,151 +635,112 @@ useEffect(() => {
 
 useEffect(() => {
   const fetchAllMetrics = async () => {
-    if (!memberId || !teamId) {
-      console.log('Missing memberId or teamId:', { memberId, teamId });
-      return;
-    }
-    
-    setIsLoading(true);
-    console.log('Starting to fetch metrics with:', { memberId, teamId });
-    
-    const metrics: typeof characterMetrics = {};
-    
-    for (const character of characters) {
-      try {
-        const url = `/api/character-performance?memberId=${memberId}&characterName=${character.name}`;
-        console.log('Fetching URL:', url);
-        
-        const response = await fetch(url);
-        console.log(`Response for ${character.name}:`, { 
-          status: response.status,
-          ok: response.ok 
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          console.log(`Data for ${character.name}:`, data);
-          metrics[character.name] = data;
-        } else {
-          const errorText = await response.text();
-          console.error(`Failed to fetch metrics for ${character.name}:`, errorText);
-          metrics[character.name] = null;
-        }
-      } catch (error) {
-        console.error(`Error fetching metrics for ${character.name}:`, error);
-        metrics[character.name] = null;
-      }
-    }
-    
-    console.log('Final metrics to be set:', metrics);
-    setCharacterMetrics(metrics);
+  if (!memberId || !teamId) {
+    console.log('Missing memberId or teamId:', { memberId, teamId });
+    return;
+  }
+  
+  setIsLoading(true);
+  
+  try {
+    // Fetch performance goals first
+    const goalsResponse = await fetch(`/api/performance-goals?teamId=${teamId}`);
+    const goals = await goalsResponse.json();
+    setPerformanceGoals(goals);
 
-for (const character of characters) {
-      try {
-        const response = await fetch(
-          `/api/unlock-animations?memberId=${memberId}&characterName=${character.name}`
-        );
-        const { unlocked } = await response.json();
-        if (unlocked) {
-          setPreviousLockStates(prev => ({
-            ...prev,
-            [character.name]: false
-          }));
-        }
-      } catch (error) {
-        console.error('Error checking unlock status:', error);
-      }
-    }
+    // Fetch all data in parallel
+    const characterPromises = characters.map(async (character) => {
+      // Fetch both metrics and unlock status in parallel
+      const [metricsRes, unlockRes] = await Promise.all([
+        fetch(`/api/character-performance?memberId=${memberId}&characterName=${character.name}`),
+        fetch(`/api/unlock-animations?memberId=${memberId}&characterName=${character.name}`)
+      ]);
 
+      const [metrics, unlockStatus] = await Promise.all([
+        metricsRes.json(),
+        unlockRes.json()
+      ]);
+
+      return {
+        name: character.name,
+        metrics: metrics || null,
+        unlocked: unlockStatus.unlocked || false
+      };
+    });
+
+    const results = await Promise.all(characterPromises);
+
+    // Build new states
+    const newMetrics = {};
+    const newLockStates = {};
+
+    results.forEach((result) => {
+      newMetrics[result.name] = result.metrics;
+      newLockStates[result.name] = !result.unlocked; // false means unlocked
+    });
+
+    // Set all states at once
+    setCharacterMetrics(newMetrics);
+    setPreviousLockStates(newLockStates);
+    
+  } catch (error) {
+    console.error('Error fetching data:', error);
+  } finally {
     setIsLoading(false);
-  };
-
-  // Initial fetch
-  fetchAllMetrics();
-
-  // Set up polling every 5 seconds
-  const intervalId = setInterval(() => {
-    fetchAllMetrics();
-  }, 5000);
-
-  // Cleanup on unmount
-  return () => clearInterval(intervalId);
-}, [memberId, teamId]);
+  }
+};
 
 useEffect(() => {
   const handleCharacterUnlocks = async () => {
+    if (!memberId || isLoading) return;
+
+    const newLockStates = { ...previousLockStates };
+    let needsUpdate = false;
+
     for (const character of characters) {
       const index = characters.indexOf(character);
       const prevCharacter = index > 0 ? characters[index - 1] : null;
       const prevCharacterMetrics = prevCharacter ? characterMetrics[prevCharacter.name] : null;
 
-      // Determine if character should be unlocked
-      let meetsUnlockCriteria = false;
+      let shouldBeUnlocked = false;
       if (index === 0) {
-        meetsUnlockCriteria = true;
+        shouldBeUnlocked = true;
       } else if (
         prevCharacterMetrics && 
         prevCharacterMetrics.overall_performance >= performanceGoals.overall_performance_goal &&
         prevCharacterMetrics.total_calls >= performanceGoals.number_of_calls_average
       ) {
-        meetsUnlockCriteria = true;
+        shouldBeUnlocked = true;
       }
 
-      // Check if animation was already shown previously
-      let animationWasShown = false;
-      if (memberId) {
-        try {
-          const response = await fetch(
-            `/api/unlock-animations?memberId=${memberId}&characterName=${character.name}`
-          );
-          const { shown } = await response.json();
-          animationWasShown = shown;
-        } catch (error) {
-          console.error('Error checking animation status:', error);
-        }
-      }
-
-      const wasLocked = previousLockStates[character.name];
+      const currentlyLocked = previousLockStates[character.name];
       
-      // Only show animation if character was locked, meets criteria, isn't being unlocked, 
-      // and hasn't shown animation before
-      if (wasLocked && meetsUnlockCriteria && !unlockingInProgress[character.name] && 
-          !showUnlockAnimation && !animationWasShown) {
+      if (currentlyLocked && shouldBeUnlocked && !unlockingInProgress[character.name] && !showUnlockAnimation) {
         try {
-          if (memberId) {
-            // Set unlocking in progress
-            setUnlockingInProgress(prev => ({ ...prev, [character.name]: true }));
-            setShowUnlockAnimation(character.name);
-            
-            // Record that we're showing the animation
-            await fetch('/api/unlock-animations', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                memberId,
-                characterName: character.name
-              })
-            });
-          }
+          setUnlockingInProgress(prev => ({ ...prev, [character.name]: true }));
+          setShowUnlockAnimation(character.name);
+          
+          await fetch('/api/unlock-animations', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ memberId, characterName: character.name })
+          });
+
+          newLockStates[character.name] = false;
+          needsUpdate = true;
         } catch (error) {
           console.error('Error handling unlock animation:', error);
         }
       }
+    }
 
-      // Update lock state based on criteria and animation status
-      setPreviousLockStates(prev => ({
-        ...prev,
-        [character.name]: !meetsUnlockCriteria || (unlockingInProgress[character.name] && !animationWasShown)
-      }));
+    if (needsUpdate) {
+      setPreviousLockStates(newLockStates);
     }
   };
 
-  if (memberId) {
-    handleCharacterUnlocks();
-  }
-}, [characterMetrics, performanceGoals, memberId, characters, showUnlockAnimation, unlockingInProgress, previousLockStates]);
+  handleCharacterUnlocks();
+}, [memberId, characterMetrics, performanceGoals, showUnlockAnimation, unlockingInProgress, previousLockStates, isLoading]);
 
 useLayoutEffect(() => {
   const updateHeight = () => {
@@ -957,7 +918,10 @@ return (
 >
   {isLoading ? (
     <div className="flex items-center justify-center h-full">
-      <p>Loading metrics...</p>
+      <div className="animate-pulse">
+        <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
+        <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+      </div>
     </div>
   ) : (
     <ScorePanel 
