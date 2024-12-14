@@ -1,3 +1,4 @@
+// src/app/page-creative.tsx
 'use client';
 import Creative from '@/components/ui/Creative';
 
