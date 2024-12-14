@@ -402,10 +402,7 @@ function ScorePanel({
 
   const handleRecordsClick = (e: React.MouseEvent) => {
   e.preventDefault();
-  window.parent.postMessage({
-    type: 'REDIRECT',
-    url: 'https://app.trainedbyai.com/call-records'
-  }, '*');
+  window.top!.location.href = 'https://app.trainedbyai.com/call-records';
 };
 
   // Use previous metrics while loading
@@ -882,10 +879,10 @@ return (
           />
         </div>
 
-        <div className="relative w-full mb-6 flex-grow">
+<div className="relative w-full flex-grow">
   <button 
     onClick={() => togglePanel(character.name)}
-    className="w-full py-3 rounded-[20px] text-black font-semibold text-lg transition-all hover:opacity-90 hover:shadow-lg bg-white shadow-md mb-2" // Changed mb-6 to mb-2
+    className="w-full py-3 rounded-[20px] text-black font-semibold text-lg transition-all hover:opacity-90 hover:shadow-lg bg-white shadow-md mb-2"
   >
     <span>
       {activePanel[character.name] === 'description' ? 'View Performance' : 'Back to Description'}
@@ -906,7 +903,7 @@ return (
                   animate={{ y: 0, opacity: 1 }}
                   exit={{ y: "-100%", opacity: 0 }}
                   transition={{ type: "tween", ease: "easeInOut", duration: 0.3 }}
-                  className="absolute inset-0"
+                  className="absolute inset-0 flex items-center"
                 >
                   <p className="text-gray-600 text-base leading-relaxed text-center flex items-center justify-center h-full">
                     {character.description}
