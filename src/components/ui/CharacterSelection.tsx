@@ -488,7 +488,8 @@ function LockedOverlay({
   difficulty,
   performanceGoals,
   showUnlockAnimation,
-  onAnimationComplete
+  onAnimationComplete,
+  characterName
 }: { 
   previousAssistant: string; 
   isLastLocked: boolean; 
@@ -508,7 +509,7 @@ function LockedOverlay({
         ? 'rgba(252, 161, 71, 0.5)'
         : 'rgba(220, 38, 38, 0.5)';
 
-useEffect(() => {
+  useEffect(() => {
     if (showUnlockAnimation) {
       const timeout = setTimeout(() => {
         if (onAnimationComplete) {
@@ -524,45 +525,34 @@ useEffect(() => {
     <div 
       className="absolute inset-0 rounded-[15px] flex items-center justify-center bg-black/40 backdrop-blur-sm" 
       style={{ 
-        boxShadow: `0 0 20px ${
-          difficulty === 'Easy' 
-            ? 'rgba(72, 199, 174, 0.5)' 
-            : difficulty === 'Intermediate'
-              ? 'rgba(252, 161, 71, 0.5)'
-              : 'rgba(220, 38, 38, 0.5)'
-        }`
+        boxShadow: `0 0 20px ${glowColor}`
       }}
     >
       <div className="w-[400px] h-[400px] p-6 pt-16 text-center flex flex-col items-center justify-start">
         <div>
           <div className="flex justify-center items-center gap-4 mb-8 w-full">
-  <AnimatedLock 
-  characterName={previousAssistant}
-  isLocked={!showUnlockAnimation}
-  onUnlockShown={onAnimationComplete}
-/>
-</div>
+            <AnimatedLock 
+              characterName={previousAssistant}
+              isLocked={!showUnlockAnimation}
+              onUnlockShown={onAnimationComplete}
+            />
+          </div>
           <h3 className="text-3xl font-bold text-white mb-4">Character Locked</h3>
           <p className="text-white text-xl mb-8">
-            {isLastLocked 
-              ? `Unlock ${previousAssistant} First` 
-              : `Achieve Overall Performance above ${performanceGoals.overall_performance_goal} from the past ${performanceGoals.number_of_calls_average} calls on ${previousAssistant} to Unlock.`
-            }
+            {`Achieve Overall Performance above ${performanceGoals.overall_performance_goal} from the past ${performanceGoals.number_of_calls_average} calls on ${previousAssistant} to Unlock.`}
           </p>
-          {!isLastLocked && (
-            <div className="w-full">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-sm font-medium text-white">Overall Performance</span>
-                <span className="text-sm font-bold text-white">{performanceGoals.overall_performance_goal}/100</span>
-              </div>
-              <div className="h-3 bg-white/20 rounded-full overflow-hidden relative">
-                <div 
-                  className="h-full bg-gradient-to-r from-white to-gray-200 rounded-full transition-all duration-1000 ease-out"
-                  style={{ width: `${performanceGoals.overall_performance_goal}%` }}
-                />
-              </div>
+          <div className="w-full">
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-sm font-medium text-white">Overall Performance</span>
+              <span className="text-sm font-bold text-white">{performanceGoals.overall_performance_goal}/100</span>
             </div>
-          )}
+            <div className="h-3 bg-white/20 rounded-full overflow-hidden relative">
+              <div 
+                className="h-full bg-gradient-to-r from-white to-gray-200 rounded-full transition-all duration-1000 ease-out"
+                style={{ width: `${performanceGoals.overall_performance_goal}%` }}
+              />
+            </div>
+          </div>
         </div>
       </div>
     </div>
