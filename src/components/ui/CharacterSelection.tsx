@@ -828,9 +828,9 @@ if (index === 0) {
 
   // Update character's locked status
   const updatedCharacter = {
-    ...character,
-    locked: character.locked && !shouldBeUnlocked
-  };
+  ...character,
+  locked: character.locked && (!shouldBeUnlocked || showUnlockAnimation === character.name)
+};
           
           if (index === 0) {
             // Megan is always unlocked
