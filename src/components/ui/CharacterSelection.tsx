@@ -661,8 +661,8 @@ useEffect(() => {
     const metrics: typeof characterMetrics = {};
     
     for (const character of characters) {
-  try {
-    const url = `/api/character-performance?memberId=${memberId}&characterName=${character.name}`;
+      try {
+        const url = `/api/character-performance?memberId=${memberId}&characterName=${character.name}`;
         console.log('Fetching URL:', url);
         
         const response = await fetch(url);
@@ -691,8 +691,49 @@ useEffect(() => {
     setIsLoading(false);
   };
 
+  // Initial fetch
   fetchAllMetrics();
+
+  // Set up polling every 5 seconds
+  const intervalId = setInterval(() => {
+    fetchAllMetrics();
+  }, 5000);
+
+  // Cleanup on unmount
+  return () => clearInterval(intervalId);
 }, [memberId, teamId]);
+
+useEffect(() => {
+  characters.forEach((character) => {
+    const currentMetrics = characterMetrics[character.name];
+    const prevCharacter = characters[characters.indexOf(character) - 1];
+    const prevCharacterMetrics = prevCharacter ? characterMetrics[prevCharacter.name] : null;
+
+    let shouldBeUnlocked = false;
+    if (characters.indexOf(character) === 0) {
+      shouldBeUnlocked = true;
+    } else if (
+      prevCharacterMetrics && 
+      prevCharacterMetrics.overall_performance >= performanceGoals.overall_performance_goal &&
+      prevCharacterMetrics.total_calls >= performanceGoals.number_of_calls_average
+    ) {
+      shouldBeUnlocked = true;
+    }
+
+    // Check if this is a transition from locked to unlocked
+    const wasLocked = previousLockStates[character.name];
+    if (wasLocked && shouldBeUnlocked) {
+      console.log('Transition detected for:', character.name);
+      setShowUnlockAnimation(character.name);
+    }
+
+    // Update lock state for next check
+    setPreviousLockStates(prev => ({
+      ...prev,
+      [character.name]: !shouldBeUnlocked
+    }));
+  });
+}, [characterMetrics]);
 
 useEffect(() => {
   characters.forEach((character) => {
