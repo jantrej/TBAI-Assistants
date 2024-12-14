@@ -468,35 +468,6 @@ const [redirectUrl, setRedirectUrl] = useState<string | null>(null);
 const [previousLockStates, setPreviousLockStates] = useState<{[key: string]: boolean}>({});
 const [showUnlockAnimation, setShowUnlockAnimation] = useState<string | null>(null);
 
-const checkAndShowAnimation = async (character: Character, shouldBeUnlocked: boolean) => {
-  if (!memberId) return;
-
-  try {
-    // Check if we've shown the animation before
-    const response = await fetch(`/api/unlock-animations?memberId=${memberId}&characterName=${character.name}`);
-    const { shown } = await response.json();
-
-    // If we haven't shown it and the character should be unlocked, show animation
-    if (!shown && shouldBeUnlocked) {
-      setShowUnlockAnimation(character.name);
-
-      // Record that we've shown the animation
-      await fetch('/api/unlock-animations', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          memberId,
-          characterName: character.name
-        })
-      });
-    }
-  } catch (error) {
-    console.error('Error handling unlock animation:', error);
-  }
-};
-
 useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const tid = urlParams.get('teamId');
@@ -718,75 +689,69 @@ useEffect(() => {
 }, [memberId, teamId]);
 
 useEffect(() => {
-  characters.forEach((character) => {
-    const currentMetrics = characterMetrics[character.name];
-    const prevCharacter = characters[characters.indexOf(character) - 1];
-    const prevCharacterMetrics = prevCharacter ? characterMetrics[prevCharacter.name] : null;
+  const handleCharacterUnlocks = async () => {
+    for (const character of characters) {
+      const index = characters.indexOf(character);
+      const prevCharacter = index > 0 ? characters[index - 1] : null;
+      const prevCharacterMetrics = prevCharacter ? characterMetrics[prevCharacter.name] : null;
 
-    let shouldBeUnlocked = false;
-    if (characters.indexOf(character) === 0) {
-      shouldBeUnlocked = true;
-    } else if (
-      prevCharacterMetrics && 
-      prevCharacterMetrics.overall_performance >= performanceGoals.overall_performance_goal &&
-      prevCharacterMetrics.total_calls >= performanceGoals.number_of_calls_average &&
-      !showUnlockAnimation  // Only consider it unlocked if not currently animating
-    ) {
-      shouldBeUnlocked = true;
-    }
-
-    // Check if criteria is met but not yet animating
-    const meetsUnlockCriteria = 
-      prevCharacterMetrics && 
-      prevCharacterMetrics.overall_performance >= performanceGoals.overall_performance_goal &&
-      prevCharacterMetrics.total_calls >= performanceGoals.number_of_calls_average;
-
-    const wasLocked = previousLockStates[character.name];
-    if (wasLocked && meetsUnlockCriteria && !showUnlockAnimation) {
-      console.log('Starting unlock animation for:', character.name);
-      setShowUnlockAnimation(character.name);
-    }
-
-    // Update lock state for next check
-    setPreviousLockStates(prev => ({
-      ...prev,
-      [character.name]: !shouldBeUnlocked
-    }));
-  });
-}, [characterMetrics, showUnlockAnimation]); // Added showUnlockAnimation to dependencies
-
-useEffect(() => {
-  characters.forEach((character) => {
-    const currentMetrics = characterMetrics[character.name];
-    const prevCharacter = characters[characters.indexOf(character) - 1];
-    const prevCharacterMetrics = prevCharacter ? characterMetrics[prevCharacter.name] : null;
-
-    // Check if character should be unlocked
-    let shouldBeUnlocked = false;
-    if (characters.indexOf(character) === 0) {
-      shouldBeUnlocked = true;
-    } else if (
-      prevCharacterMetrics && 
-      prevCharacterMetrics.overall_performance >= performanceGoals.overall_performance_goal &&
-      prevCharacterMetrics.total_calls >= performanceGoals.number_of_calls_average &&
-      !unlockingInProgress[character.name]  // Check if not currently unlocking
-    ) {
-      const wasLocked = previousLockStates[character.name];
-      if (wasLocked) {
-        // Start the unlock sequence
-        setUnlockingInProgress(prev => ({ ...prev, [character.name]: true }));
-        setShowUnlockAnimation(character.name);
-      } else {
-        shouldBeUnlocked = true;
+      // Determine if character should be unlocked
+      let meetsUnlockCriteria = false;
+      if (index === 0) {
+        meetsUnlockCriteria = true;
+      } else if (
+        prevCharacterMetrics && 
+        prevCharacterMetrics.overall_performance >= performanceGoals.overall_performance_goal &&
+        prevCharacterMetrics.total_calls >= performanceGoals.number_of_calls_average
+      ) {
+        meetsUnlockCriteria = true;
       }
-    }
 
-    setPreviousLockStates(prev => ({
-      ...prev,
-      [character.name]: !shouldBeUnlocked
-    }));
-  });
-}, [characterMetrics, performanceGoals]);
+      const wasLocked = previousLockStates[character.name];
+      
+      // Only proceed if character was locked and now meets criteria
+      if (wasLocked && meetsUnlockCriteria && !unlockingInProgress[character.name] && !showUnlockAnimation) {
+        try {
+          // Check if we've already shown the animation
+          const response = await fetch(
+            `/api/unlock-animations?memberId=${memberId}&characterName=${character.name}`
+          );
+          const { shown } = await response.json();
+
+          // Only show animation if we haven't shown it before
+          if (!shown && memberId) {
+            setUnlockingInProgress(prev => ({ ...prev, [character.name]: true }));
+            setShowUnlockAnimation(character.name);
+            
+            // Record that we're showing the animation
+            await fetch('/api/unlock-animations', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                memberId,
+                characterName: character.name
+              })
+            });
+          }
+        } catch (error) {
+          console.error('Error handling unlock animation:', error);
+        }
+      }
+
+      // Update lock state
+      setPreviousLockStates(prev => ({
+        ...prev,
+        [character.name]: !meetsUnlockCriteria || unlockingInProgress[character.name]
+      }));
+    }
+  };
+
+  if (memberId) {
+    handleCharacterUnlocks();
+  }
+}, [characterMetrics, performanceGoals, memberId, characters, showUnlockAnimation, unlockingInProgress, previousLockStates]);
 
 useLayoutEffect(() => {
   const updateHeight = () => {
