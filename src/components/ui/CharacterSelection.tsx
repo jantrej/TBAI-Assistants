@@ -396,7 +396,7 @@ useEffect(() => {
         if (onAnimationComplete) {
           onAnimationComplete();
         }
-      }, 2000); // Match this with your animation duration
+      }, 3000); // Match this with your animation duration
 
       return () => clearTimeout(timeout);
     }
