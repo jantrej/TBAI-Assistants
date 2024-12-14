@@ -459,13 +459,13 @@ function ScorePanel({
                   {label}
                 </span>
                 <span className={`font-bold text-green-500 ${key === 'overall_performance' ? 'text-lg' : 'text-xs'}`}>
-                  {displayMetrics[key as keyof PerformanceMetrics] || 0}/100
+                  {(displayMetrics?.[key as keyof PerformanceMetrics] ?? 0)}/100
                 </span>
               </div>
               <div className={`bg-gray-200 rounded-full overflow-hidden ${key === 'overall_performance' ? 'h-3' : 'h-2'}`}>
                 <div 
                   className="h-full bg-green-500 rounded-full transition-all duration-300"
-                  style={{ width: `${displayMetrics[key as keyof PerformanceMetrics] || 0}%` }}
+                  style={{ width: `${displayMetrics?.[key as keyof PerformanceMetrics] ?? 0}%` }}
                 />
               </div>
             </div>
