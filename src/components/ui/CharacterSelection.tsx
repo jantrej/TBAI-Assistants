@@ -97,7 +97,7 @@ interface PerformanceMetrics {
 }
 
 interface AnimatedStartButtonProps {
-  onComplete: () => void;
+  onStart: () => void;
   isLocked?: boolean;
   showLockedText?: boolean;
 }
@@ -126,10 +126,11 @@ const AnimatedStartButton: React.FC<AnimatedStartButtonProps> = ({ onComplete, i
 
       requestAnimationFrame(updateProgress);
     }
-  }, [state, onComplete])
+  }, [state])
 
   const handleClick = () => {
     if (state === 'idle' && !isLocked) {
+      onStart();
       setState('loading')
       setProgress(0)
     }
@@ -796,7 +797,7 @@ if (index === 0) {
                     </div>
                   </div>
                   <AnimatedStartButton 
-  onComplete={() => handleStart(character)}
+  onStart={() => handleStart(character)}
   isLocked={updatedCharacter.locked}
   showLockedText={updatedCharacter.locked}
 />
