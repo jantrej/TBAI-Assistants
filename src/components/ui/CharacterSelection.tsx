@@ -571,20 +571,11 @@ export default function CharacterSelection() {
   
   const { characterStates, isInitialLoad, unlockCharacter } = useCharacterState(memberId, performanceGoals);
 
-const [memberId, setMemberId] = useState<string | null>(null);
-const [isLoading, setIsLoading] = useState(true);
-const [redirectUrl, setRedirectUrl] = useState<string | null>(null);
-
 useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const tid = urlParams.get('teamId');
     setTeamId(tid);
   }, []);
-
-const [performanceGoals, setPerformanceGoals] = useState({
-  overall_performance_goal: 85,
-  number_of_calls_average: 10
-});
 
   useEffect(() => {
   // Get memberId directly from URL
