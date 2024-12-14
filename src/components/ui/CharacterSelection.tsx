@@ -404,37 +404,42 @@ const handleStart = async (character: Character) => {
   }
 
   try {
-    // Create form data for the POST request
-    const formData = new FormData();
-    formData.append('member_ID', memberId);
-    if (teamId) {
-      formData.append('teamId', teamId);
-    }
-    formData.append('character', character.name);
+    // Create the form directly with the data we need
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.style.display = 'none';
+    form.target = '_top'; // Force top-level navigation
 
-    // First attempt: Try window.location.href direct navigation
+    // Add member_ID input
+    const memberInput = document.createElement('input');
+    memberInput.type = 'hidden';
+    memberInput.name = 'member_ID';
+    memberInput.value = memberId;
+    form.appendChild(memberInput);
+
+    // Add teamId input if it exists
+    if (teamId) {
+      const teamInput = document.createElement('input');
+      teamInput.type = 'hidden';
+      teamInput.name = 'teamId';
+      teamInput.value = teamId;
+      form.appendChild(teamInput);
+    }
+
+    // Add character input
+    const characterInput = document.createElement('input');
+    characterInput.type = 'hidden';
+    characterInput.name = 'character';
+    characterInput.value = character.name;
+    form.appendChild(characterInput);
+
+    // Set the form action URL with query parameters
     const params = new URLSearchParams({
       member_ID: memberId,
       ...(teamId && { teamId }),
       character: character.name
     });
-
-    const directUrl = `${apiUrl}?${params.toString()}`;
-    
-    // Create a hidden form that will handle the POST request
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = directUrl;
-    form.target = '_top'; // Force top-level navigation
-    
-    // Add the form data as hidden inputs
-    for (const [key, value] of formData.entries()) {
-      const input = document.createElement('input');
-      input.type = 'hidden';
-      input.name = key;
-      input.value = value.toString();
-      form.appendChild(input);
-    }
+    form.action = `${apiUrl}?${params.toString()}`;
 
     // Add the form to the document and submit it
     document.body.appendChild(form);
