@@ -903,9 +903,9 @@ return (
                   animate={{ y: 0, opacity: 1 }}
                   exit={{ y: "-100%", opacity: 0 }}
                   transition={{ type: "tween", ease: "easeInOut", duration: 0.3 }}
-                  className="absolute inset-0 flex items-center"
+                  className="absolute inset-0"
                 >
-                  <p className="text-gray-600 text-base leading-relaxed text-center flex items-center justify-center h-full">
+                  <p className="text-gray-600 text-base leading-relaxed text-center pt-2">
                     {character.description}
                   </p>
                 </motion.div>
