@@ -897,7 +897,6 @@ if (index > 0 && prevCharacterState && prevCharacterState.metrics && performance
                   className="absolute inset-0 overflow-hidden"
                 >
                   {!isInitialLoad && performanceGoals && (
-                  <div>
   <ScorePanel 
     characterName={character.name}
     memberId={memberId || ''}
@@ -905,6 +904,8 @@ if (index > 0 && prevCharacterState && prevCharacterState.metrics && performance
     performanceGoals={performanceGoals}
   />
 )}
+                </motion.div>
+              )}
             </AnimatePresence>
           </div>
         </div>
