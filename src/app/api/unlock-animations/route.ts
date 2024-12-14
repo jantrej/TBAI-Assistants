@@ -13,7 +13,7 @@ export async function OPTIONS() {
   return NextResponse.json({}, { headers: corsHeaders() });
 }
 
-// Check if animation has been shown
+// Check if animation has been shown and unlock status
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -32,15 +32,26 @@ export async function GET(request: Request) {
     });
 
     const { rows } = await pool.sql`
-      SELECT EXISTS (
-        SELECT 1 
-        FROM unlock_animations_shown 
-        WHERE member_id = ${memberId} 
-        AND character_name = ${characterName}
-      ) as shown;
+      SELECT 
+        EXISTS (
+          SELECT 1 
+          FROM unlock_animations_shown 
+          WHERE member_id = ${memberId} 
+          AND character_name = ${characterName}
+        ) as shown,
+        EXISTS (
+          SELECT 1 
+          FROM unlock_animations_shown 
+          WHERE member_id = ${memberId} 
+          AND character_name = ${characterName}
+          AND unlocked = true
+        ) as unlocked;
     `;
 
-    return NextResponse.json({ shown: rows[0].shown }, { headers: corsHeaders() });
+    return NextResponse.json({ 
+      shown: rows[0].shown,
+      unlocked: rows[0].unlocked
+    }, { headers: corsHeaders() });
   } catch (error) {
     console.error('Error checking animation status:', error);
     return NextResponse.json(
@@ -50,7 +61,7 @@ export async function GET(request: Request) {
   }
 }
 
-// Record that animation has been shown
+// Record that animation has been shown and character is unlocked
 export async function POST(request: Request) {
   try {
     const { memberId, characterName } = await request.json();
@@ -67,9 +78,10 @@ export async function POST(request: Request) {
     });
 
     await pool.sql`
-      INSERT INTO unlock_animations_shown (member_id, character_name)
-      VALUES (${memberId}, ${characterName})
-      ON CONFLICT (member_id, character_name) DO NOTHING;
+      INSERT INTO unlock_animations_shown (member_id, character_name, unlocked)
+      VALUES (${memberId}, ${characterName}, true)
+      ON CONFLICT (member_id, character_name) 
+      DO UPDATE SET unlocked = true;
     `;
 
     return NextResponse.json({ success: true }, { headers: corsHeaders() });
