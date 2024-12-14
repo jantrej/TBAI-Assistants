@@ -401,12 +401,12 @@ function ScorePanel({
   }, [memberId, characterName, teamId]);
 
   const handleRecordsClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    window.parent.postMessage({
-      type: 'REDIRECT',
-      url: 'https://app.trainedbyai.com/call-records'
-    }, '*');
-  };
+  e.preventDefault();
+  window.parent.postMessage({
+    type: 'REDIRECT',
+    url: 'https://app.trainedbyai.com/call-records'
+  }, '*');
+};
 
   // Use previous metrics while loading
   const displayMetrics = metrics || previousMetrics.current;
@@ -883,19 +883,19 @@ return (
         </div>
 
         <div className="relative w-full mb-6 flex-grow">
-          <button 
-            onClick={() => togglePanel(character.name)}
-            className="w-full py-3 rounded-[20px] text-black font-semibold text-lg transition-all hover:opacity-90 hover:shadow-lg bg-white shadow-md mb-6"
-          >
-            <span>
-              {activePanel[character.name] === 'description' ? 'View Performance' : 'Back to Description'}
-            </span>
-            {activePanel[character.name] === 'description' ? (
-              <ChevronDown size={20} className="inline-block ml-2" />
-            ) : (
-              <ChevronUp size={20} className="inline-block ml-2" />
-            )}
-          </button>
+  <button 
+    onClick={() => togglePanel(character.name)}
+    className="w-full py-3 rounded-[20px] text-black font-semibold text-lg transition-all hover:opacity-90 hover:shadow-lg bg-white shadow-md mb-2" // Changed mb-6 to mb-2
+  >
+    <span>
+      {activePanel[character.name] === 'description' ? 'View Performance' : 'Back to Description'}
+    </span>
+    {activePanel[character.name] === 'description' ? (
+      <ChevronDown size={20} className="inline-block ml-2" />
+    ) : (
+      <ChevronUp size={20} className="inline-block ml-2" />
+    )}
+  </button>
 
           <div className="min-h-[300px] overflow-hidden relative">
             <AnimatePresence initial={false}>
