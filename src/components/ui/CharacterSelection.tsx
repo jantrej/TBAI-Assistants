@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useLayoutEffect } from "react"
+import { useState, useEffect, useLayoutEffect, useRef, useCallback } from "react"
 import Image from "next/image"
 import { motion, AnimatePresence } from "framer-motion"
 import { ChevronRight, ChevronLeft, ChevronDown, ChevronUp } from 'lucide-react'
@@ -750,20 +750,17 @@ useLayoutEffect(() => {
 }, [activePanel]);
   
 return (
-    <div
-      className="w-full h-auto bg-white rounded-[20px]"
-    >
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-5">
-
-{characters.map((character, index) => {
-  // Skip rendering if we're still in initial load
-  if (isInitialLoad) {
-    return (
-      <div key={character.name} className="animate-pulse">
-        <div className="h-[600px] bg-gray-100 rounded-[20px]"></div>
-      </div>
-    );
-  }
+  <div className="w-full h-auto bg-white rounded-[20px]">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-5">
+      {characters.map((character, index) => {
+        // Skip rendering if we're still in initial load
+        if (isInitialLoad) {
+          return (
+            <div key={`${character.name}-skeleton`} className="animate-pulse">
+              <div className="h-[600px] bg-gray-100 rounded-[20px]"></div>
+            </div>
+          );
+        }
 
   const characterState = characterStates[character.name];
   const prevCharacter = index > 0 ? characters[index - 1] : null;
@@ -899,21 +896,24 @@ return (
       </div>
 
       {/* Only show LockedOverlay if character is locked */}
-      {characterState?.isLocked && (
-        <LockedOverlay 
-          previousAssistant={prevCharacter?.name || ''}
-          isLastLocked={index === characters.length - 1}
-          difficulty={character.difficulty}
-          performanceGoals={performanceGoals}
-          showUnlockAnimation={showUnlockAnimation}
-          onAnimationComplete={() => {
-            if (showUnlockAnimation) {
-              unlockCharacter(character.name);
-            }
-          }}
-          characterName={character.name}
-        />
-      )}
+      {characterState?.isLocked && performanceGoals && (
+              <LockedOverlay 
+                previousAssistant={prevCharacter?.name || ''}
+                isLastLocked={index === characters.length - 1}
+                difficulty={character.difficulty}
+                performanceGoals={performanceGoals}
+                showUnlockAnimation={showUnlockAnimation}
+                onAnimationComplete={() => {
+                  if (showUnlockAnimation) {
+                    unlockCharacter(character.name);
+                  }
+                }}
+                characterName={character.name}
+              />
+            )}
+          </div>
+        );
+      })}
     </div>
-  );
-})}
+  </div>
+);
