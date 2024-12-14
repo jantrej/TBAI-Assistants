@@ -918,5 +918,3 @@ return (
   </div>
 );
 }
-
-export default CharacterSelection;
