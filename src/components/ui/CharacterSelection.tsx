@@ -715,15 +715,21 @@ useEffect(() => {
     } else if (
       prevCharacterMetrics && 
       prevCharacterMetrics.overall_performance >= performanceGoals.overall_performance_goal &&
-      prevCharacterMetrics.total_calls >= performanceGoals.number_of_calls_average
+      prevCharacterMetrics.total_calls >= performanceGoals.number_of_calls_average &&
+      !showUnlockAnimation  // Only consider it unlocked if not currently animating
     ) {
       shouldBeUnlocked = true;
     }
 
-    // Check if this is a transition from locked to unlocked
+    // Check if criteria is met but not yet animating
+    const meetsUnlockCriteria = 
+      prevCharacterMetrics && 
+      prevCharacterMetrics.overall_performance >= performanceGoals.overall_performance_goal &&
+      prevCharacterMetrics.total_calls >= performanceGoals.number_of_calls_average;
+
     const wasLocked = previousLockStates[character.name];
-    if (wasLocked && shouldBeUnlocked) {
-      console.log('Transition detected for:', character.name);
+    if (wasLocked && meetsUnlockCriteria && !showUnlockAnimation) {
+      console.log('Starting unlock animation for:', character.name);
       setShowUnlockAnimation(character.name);
     }
 
@@ -733,7 +739,7 @@ useEffect(() => {
       [character.name]: !shouldBeUnlocked
     }));
   });
-}, [characterMetrics]);
+}, [characterMetrics, showUnlockAnimation]); // Added showUnlockAnimation to dependencies
 
 useEffect(() => {
   characters.forEach((character) => {
