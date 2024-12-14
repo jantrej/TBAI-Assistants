@@ -760,9 +760,41 @@ return (
         // Skip rendering if we're still in initial load
         if (isInitialLoad) {
           return (
-            <div key={`${character.name}-skeleton`} className="animate-pulse">
-              <div className="h-[600px] bg-gray-100 rounded-[20px]"></div>
-            </div>
+            <motion.div
+              key={`${character.name}-skeleton`}
+              initial={{ opacity: 0, y: 50 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{
+                duration: 0.5,
+                delay: index * 0.2,
+                ease: [0.23, 1, 0.32, 1]
+              }}
+              className="bg-white rounded-[20px] shadow-lg overflow-hidden"
+            >
+              <div className="p-4 flex flex-col items-center">
+                {/* Profile Image Skeleton */}
+                <div className="w-32 h-32 mb-4 rounded-[20px] bg-gradient-to-r from-gray-100 to-gray-200 animate-pulse" />
+                
+                {/* Name and Difficulty Skeleton */}
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="h-6 w-24 bg-gradient-to-r from-gray-100 to-gray-200 rounded-full animate-pulse" />
+                  <div className="h-6 w-16 bg-gradient-to-r from-gray-100 to-gray-200 rounded-full animate-pulse" />
+                </div>
+
+                {/* Start Button Skeleton */}
+                <div className="w-full h-12 mb-4 bg-gradient-to-r from-gray-100 to-gray-200 rounded-[20px] animate-pulse" />
+
+                {/* Toggle Button Skeleton */}
+                <div className="w-full h-12 mb-4 bg-gradient-to-r from-gray-100 to-gray-200 rounded-[20px] animate-pulse" />
+
+                {/* Description Skeleton */}
+                <div className="space-y-2 w-full">
+                  <div className="h-4 w-full bg-gradient-to-r from-gray-100 to-gray-200 rounded animate-pulse" />
+                  <div className="h-4 w-5/6 bg-gradient-to-r from-gray-100 to-gray-200 rounded animate-pulse" />
+                  <div className="h-4 w-4/6 bg-gradient-to-r from-gray-100 to-gray-200 rounded animate-pulse" />
+                </div>
+              </div>
+            </motion.div>
           );
         }
 
@@ -787,13 +819,20 @@ if (index > 0 && prevCharacterState && prevCharacterState.metrics && performance
   const showUnlockAnimation = shouldBeUnlocked && characterState?.isLocked && !characterState.animationShown;
 
   return (
-    <div 
-      key={character.name} 
-      className="relative rounded-[20px] overflow-hidden" 
-      style={{ 
-        boxShadow: '0 4px 8px rgba(0, 0, 0, 0.15)'
-      }}
-    >
+          <motion.div 
+            key={character.name}
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{
+              duration: 0.5,
+              delay: index * 0.2,
+              ease: [0.23, 1, 0.32, 1]
+            }}
+            className="relative rounded-[20px] overflow-hidden"
+            style={{ 
+              boxShadow: '0 4px 8px rgba(0, 0, 0, 0.15)'
+            }}
+          >
       <div className="p-4 flex flex-col items-center text-center">
         {/* Character card content remains the same */}
         <div className="w-full px-5 mb-2">
