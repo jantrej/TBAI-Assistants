@@ -673,6 +673,24 @@ useEffect(() => {
     
     console.log('Final metrics to be set:', metrics);
     setCharacterMetrics(metrics);
+
+for (const character of characters) {
+      try {
+        const response = await fetch(
+          `/api/unlock-animations?memberId=${memberId}&characterName=${character.name}`
+        );
+        const { unlocked } = await response.json();
+        if (unlocked) {
+          setPreviousLockStates(prev => ({
+            ...prev,
+            [character.name]: false
+          }));
+        }
+      } catch (error) {
+        console.error('Error checking unlock status:', error);
+      }
+    }
+
     setIsLoading(false);
   };
 
