@@ -368,7 +368,9 @@ function LockedOverlay({
   previousAssistant, 
   isLastLocked, 
   difficulty,
-  performanceGoals
+  performanceGoals,
+  showUnlockAnimation,
+  onAnimationComplete
 }: { 
   previousAssistant: string; 
   isLastLocked: boolean; 
@@ -377,6 +379,8 @@ function LockedOverlay({
     overall_performance_goal: number;
     number_of_calls_average: number;
   };
+  showUnlockAnimation?: boolean;
+  onAnimationComplete?: () => void;
 }) {
   const glowColor = 
     difficulty === 'Easy' 
@@ -402,10 +406,10 @@ function LockedOverlay({
         <div>
           <div className="flex justify-center items-center gap-4 mb-8 w-full">
   <AnimatedLock 
-    characterName={previousAssistant}
-    isLocked={true}
-    onUnlockShown={() => {}}
-  />
+  characterName={previousAssistant}
+  isLocked={!showUnlockAnimation}
+  onUnlockShown={onAnimationComplete}
+/>
 </div>
           <h3 className="text-3xl font-bold text-white mb-4">Character Locked</h3>
           <p className="text-white text-xl mb-8">
