@@ -782,11 +782,11 @@ return (
 
   // Determine if this character should be unlocked
   let shouldBeUnlocked = index === 0; // Megan is always unlocked
-  if (index > 0 && prevCharacterState && prevCharacterState.metrics) {
-    const meetsPerformance = prevCharacterState.metrics.overall_performance >= performanceGoals.overall_performance_goal;
-    const meetsCalls = prevCharacterState.metrics.total_calls >= performanceGoals.number_of_calls_average;
-    shouldBeUnlocked = meetsPerformance && meetsCalls;
-  }
+if (index > 0 && prevCharacterState && prevCharacterState.metrics && performanceGoals) {
+  const meetsPerformance = prevCharacterState.metrics.overall_performance >= performanceGoals.overall_performance_goal;
+  const meetsCalls = prevCharacterState.metrics.total_calls >= performanceGoals.number_of_calls_average;
+  shouldBeUnlocked = meetsPerformance && meetsCalls;
+}
 
   // If character should be unlocked but isn't yet, trigger unlock
   if (shouldBeUnlocked && characterState?.isLocked && !characterState.animationShown) {
