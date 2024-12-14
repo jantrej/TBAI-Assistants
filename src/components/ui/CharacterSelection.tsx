@@ -403,59 +403,62 @@ const handleStart = async (character: Character) => {
     return;
   }
 
-try {
-    const params = new URLSearchParams({
-      member_ID: memberId
-    });
-    
+  try {
+    // Create form data for the POST request
+    const formData = new FormData();
+    formData.append('member_ID', memberId);
     if (teamId) {
-      params.append('teamId', teamId);
+      formData.append('teamId', teamId);
     }
+    formData.append('character', character.name);
 
-    const fullUrl = `${apiUrl}?${params.toString()}`;
-    console.log('Sending webhook request to:', fullUrl);
-
-    const response = await fetch(fullUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        member_ID: memberId,
-        teamId: teamId || '',
-        character: character.name
-      })
+    // First attempt: Try window.location.href direct navigation
+    const params = new URLSearchParams({
+      member_ID: memberId,
+      ...(teamId && { teamId }),
+      character: character.name
     });
 
-    const responseText = await response.text();
-    console.log('Raw response:', responseText);
+    const directUrl = `${apiUrl}?${params.toString()}`;
     
-    let responseData;
-    try {
-      responseData = JSON.parse(responseText);
-      console.log('Parsed response:', responseData);
-    } catch (e) {
-      console.log('Response is not JSON:', responseText);
-      if (responseText.startsWith('http')) {
-        responseData = { redirectUrl: responseText };
-      }
+    // Create a hidden form that will handle the POST request
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = directUrl;
+    form.target = '_top'; // Force top-level navigation
+    
+    // Add the form data as hidden inputs
+    for (const [key, value] of formData.entries()) {
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = key;
+      input.value = value.toString();
+      form.appendChild(input);
     }
 
-    if (responseData?.redirectUrl) {
-      console.log('Redirecting to:', responseData.redirectUrl);
-      if (window.top) {
-        window.top.location.href = responseData.redirectUrl;
-      } else {
-        window.location.href = responseData.redirectUrl;
-      }
-    } else {
-      console.error('No valid redirect URL found in response');
+    // Add the form to the document and submit it
+    document.body.appendChild(form);
+    form.submit();
+
+    // Cleanup
+    setTimeout(() => {
+      document.body.removeChild(form);
+    }, 1000);
+
+  } catch (error) {
+    console.error('Error during redirect:', error);
+    
+    // Fallback: Try direct navigation if form submission fails
+    if (window.top) {
+      window.top.location.href = apiUrl + '?' + new URLSearchParams({
+        member_ID: memberId,
+        ...(teamId && { teamId }),
+        character: character.name
+      }).toString();
     }
-} catch (error) {
-    console.error('Complete error:', error);
-}
+  }
 };
-  
+
   const togglePanel = (name: string) => {
     setActivePanel(prev => ({
       ...prev,
