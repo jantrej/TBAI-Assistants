@@ -447,6 +447,9 @@ const [memberId, setMemberId] = useState<string | null>(null);
 const [isLoading, setIsLoading] = useState(true);
 const [redirectUrl, setRedirectUrl] = useState<string | null>(null);
 
+const [previousLockStates, setPreviousLockStates] = useState<{[key: string]: boolean}>({});
+const [showUnlockAnimation, setShowUnlockAnimation] = useState<string | null>(null);
+
 useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const tid = urlParams.get('teamId');
@@ -658,6 +661,40 @@ useEffect(() => {
   fetchAllMetrics();
 }, [memberId, teamId]);
 
+useEffect(() => {
+  // Loop through characters to check for unlock events
+  characters.forEach((character) => {
+    const currentMetrics = characterMetrics[character.name];
+    const prevCharacter = characters[characters.indexOf(character) - 1];
+    const prevCharacterMetrics = prevCharacter ? characterMetrics[prevCharacter.name] : null;
+
+    // Determine if character should be unlocked
+    let shouldBeUnlocked = false;
+    if (characters.indexOf(character) === 0) {
+      shouldBeUnlocked = true;
+    } else if (
+      prevCharacterMetrics && 
+      prevCharacterMetrics.overall_performance >= performanceGoals.overall_performance_goal &&
+      prevCharacterMetrics.total_calls >= performanceGoals.number_of_calls_average
+    ) {
+      shouldBeUnlocked = true;
+    }
+
+    // If this is a new unlock (was locked before, should be unlocked now)
+    const wasLocked = previousLockStates[character.name];
+    if (wasLocked && shouldBeUnlocked) {
+      // Character just got unlocked! Trigger animation
+      setShowUnlockAnimation(character.name);
+    }
+
+    // Update previous lock state
+    setPreviousLockStates(prev => ({
+      ...prev,
+      [character.name]: !shouldBeUnlocked
+    }));
+  });
+}, [characterMetrics, performanceGoals]);
+
 useLayoutEffect(() => {
   const updateHeight = () => {
     const height = document.documentElement.scrollHeight;
@@ -854,11 +891,13 @@ if (index === 0) {
               </div>
               {updatedCharacter.locked && (
   <LockedOverlay 
-    previousAssistant={prevCharacter?.name || ''}
-    isLastLocked={index === characters.length - 1}
-    difficulty={character.difficulty}
-    performanceGoals={performanceGoals}
-  />
+  previousAssistant={prevCharacter?.name || ''}
+  isLastLocked={index === characters.length - 1}
+  difficulty={character.difficulty}
+  performanceGoals={performanceGoals}
+  showUnlockAnimation={showUnlockAnimation === character.name}
+  onAnimationComplete={() => setShowUnlockAnimation(null)}
+/>
 )}
             </div>
           );
