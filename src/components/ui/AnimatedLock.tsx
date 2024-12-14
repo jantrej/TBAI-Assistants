@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
-import { createParticle } from './utils/createParticle'
+import { createParticle } from '../utils/createParticle'
 
 const COLORS = ['#f8b922', '#ce00cb', '#5b06be']
 
