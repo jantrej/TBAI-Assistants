@@ -119,8 +119,18 @@ export const AnimatedLock: React.FC<AnimatedLockProps> = ({ characterName, isLoc
           opacity: { duration: 0.5, delay: 2.5 }
         }}
       >
+
         {/* Add circular grey background */}
-        <div className="absolute inset-0 bg-[#4A4A4A] rounded-full" style={{ transform: 'scale(1.2)' }} />
+<div 
+  className="absolute rounded-full bg-[#878d94]" 
+  style={{ 
+    width: '52px',
+    height: '52px',
+    left: '50%',
+    top: '50%',
+    transform: 'translate(-50%, -50%)'
+  }} 
+/>
         
         {/* Locked state */}
         <motion.div
@@ -133,8 +143,8 @@ export const AnimatedLock: React.FC<AnimatedLockProps> = ({ characterName, isLoc
             <Image
               src="https://res.cloudinary.com/drkudvyog/image/upload/v1734127851/Locked_icon_nhftkr.png"
               alt="Locked"
-              width={48}
-              height={48}
+              width={38}
+              height={38}
               className="relative z-20"
               style={{ filter: 'drop-shadow(0px 0px 1px rgba(0,0,0,0.2))' }}
             />
@@ -151,8 +161,8 @@ export const AnimatedLock: React.FC<AnimatedLockProps> = ({ characterName, isLoc
           <Image
             src="https://res.cloudinary.com/drkudvyog/image/upload/v1734127851/Unlock_icon_cc0usb.png"
             alt="Unlocked"
-            width={48}
-            height={48}
+            width={38}
+            height={38}
             className="z-20"
             style={{ filter: 'drop-shadow(0px 0px 1px rgba(0,0,0,0.2))' }}
           />
