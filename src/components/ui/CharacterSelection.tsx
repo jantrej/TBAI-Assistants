@@ -763,6 +763,32 @@ useEffect(() => {
   }
 }, [characterMetrics, performanceGoals, memberId, characters, showUnlockAnimation, unlockingInProgress, previousLockStates]);
 
+useEffect(() => {
+  const checkUnlockStatus = async () => {
+    if (!memberId) return;
+
+    for (const character of characters) {
+      try {
+        const response = await fetch(
+          `/api/unlock-animations?memberId=${memberId}&characterName=${character.name}`
+        );
+        const { shown, unlocked } = await response.json();
+        
+        if (unlocked) {
+          setPreviousLockStates(prev => ({
+            ...prev,
+            [character.name]: false
+          }));
+        }
+      } catch (error) {
+        console.error('Error checking unlock status:', error);
+      }
+    }
+  };
+
+  checkUnlockStatus();
+}, [memberId, characters]);
+
 useLayoutEffect(() => {
   const updateHeight = () => {
     const height = document.documentElement.scrollHeight;
@@ -966,9 +992,10 @@ return (
   if (showUnlockAnimation === character.name) {
     setShowUnlockAnimation(null);
     setUnlockingInProgress(prev => ({ ...prev, [character.name]: false }));
+    // Ensure unlocked state persists
     setPreviousLockStates(prev => ({
       ...prev,
-      [character.name]: false // Ensure character stays unlocked
+      [character.name]: false // Keep character unlocked
     }));
   }
 }}
