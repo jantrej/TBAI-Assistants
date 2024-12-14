@@ -757,7 +757,6 @@ return (
   <div className="w-full h-auto bg-white rounded-[20px]">
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-5">
       {characters.map((character, index) => {
-        // Skip rendering if we're still in initial load
         if (isInitialLoad) {
           return (
             <motion.div
@@ -798,27 +797,24 @@ return (
           );
         }
 
-  const characterState = characterStates[character.name];
-  const prevCharacter = index > 0 ? characters[index - 1] : null;
-  const prevCharacterState = prevCharacter ? characterStates[prevCharacter.name] : null;
+        const characterState = characterStates[character.name];
+        const prevCharacter = index > 0 ? characters[index - 1] : null;
+        const prevCharacterState = prevCharacter ? characterStates[prevCharacter.name] : null;
 
-  // Determine if this character should be unlocked
-  let shouldBeUnlocked = index === 0; // Megan is always unlocked
-if (index > 0 && prevCharacterState && prevCharacterState.metrics && performanceGoals) {
-  const meetsPerformance = prevCharacterState.metrics.overall_performance >= performanceGoals.overall_performance_goal;
-  const meetsCalls = prevCharacterState.metrics.total_calls >= performanceGoals.number_of_calls_average;
-  shouldBeUnlocked = meetsPerformance && meetsCalls;
-}
+        let shouldBeUnlocked = index === 0;
+        if (index > 0 && prevCharacterState && prevCharacterState.metrics && performanceGoals) {
+          const meetsPerformance = prevCharacterState.metrics.overall_performance >= performanceGoals.overall_performance_goal;
+          const meetsCalls = prevCharacterState.metrics.total_calls >= performanceGoals.number_of_calls_average;
+          shouldBeUnlocked = meetsPerformance && meetsCalls;
+        }
 
-  // If character should be unlocked but isn't yet, trigger unlock
-  if (shouldBeUnlocked && characterState?.isLocked && !characterState.animationShown) {
-    unlockCharacter(character.name);
-  }
+        if (shouldBeUnlocked && characterState?.isLocked && !characterState.animationShown) {
+          unlockCharacter(character.name);
+        }
 
-  // Determine if we should show unlock animation
-  const showUnlockAnimation = shouldBeUnlocked && characterState?.isLocked && !characterState.animationShown;
+        const showUnlockAnimation = shouldBeUnlocked && characterState?.isLocked && !characterState.animationShown;
 
-  return (
+        return (
           <motion.div 
             key={character.name}
             initial={{ opacity: 0, y: 50 }}
