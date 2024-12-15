@@ -405,8 +405,7 @@ function ScorePanel({
   window.top!.location.href = 'https://app.trainedbyai.com/call-records';
 };
 
-  // Use previous metrics while loading
-  const displayMetrics = metrics || previousMetrics.current;
+const displayMetrics = metrics || previousMetrics.current;
 
 if (!displayMetrics && isLoading) {
   return (
