@@ -562,7 +562,7 @@ function LockedOverlay({
     </div>
   );
 
-export default const CharacterSelection = () => {
+function CharacterSelection() {
   const [teamId, setTeamId] = useState<string | null>(null);
   const [activePanel, setActivePanel] = useState<{ [key: string]: 'description' | 'scores' }>({
     Megan: 'description',
@@ -961,3 +961,4 @@ return (
 </div>
 );
 };
+export default CharacterSelection;
