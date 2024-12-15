@@ -337,20 +337,20 @@ const characters: Character[] = [
     locked: false, // Add this line
   },
   {
-    name: "Mike",
+    name: "Sam",
     difficulty: "Intermediate",
-    age: 40,
-    description: "I'm Mike, 45, and I've got my hands dirty in enough real estate deals to know what works and what doesn't. As a contractor, I see properties for what they really are - no fancy talk needed. Looking into lease options for my property sale, but I need to make sure I'm not boxing myself into a corner. Let's talk real numbers and real scenarios.",
-    imageSrc: "https://res.cloudinary.com/dmbzcxhjn/image/upload/67290d0fbf7ca486c43a332c_image_10_-p-500_ed6jna.jpg",
+    age: 35,
+    description: "I'm Sam, 35, and after five solid years in real estate, I've built my reputation deal by deal. Time is money in this business, and I juggle multiple clients daily. I'm open to creative solutions like dual agency, but let's be clear - my commission structure reflects the value and expertise I bring to the table. No shortcuts here.",
+    imageSrc: "https://res.cloudinary.com/dmbzcxhjn/image/upload/67290856b4c9a60f34a4b78a_image_8_-p-500_jcvtxx.png",
     color: "#FCA147",
     locked: true,
   },
   {
-    name: "Tom",
+    name: "Richard",
     difficulty: "Expert",
-    age: 55,
-    description: "I'm Tom, 60, and after decades of practicing law and building my real estate portfolio, I've learned to spot potential pitfalls from a mile away. Subject-to deals intrigue me from an investment perspective, but the legal nuances keep me up at night. I need to understand every clause, contingency, and potential liability before moving forward.",
-    imageSrc: "https://res.cloudinary.com/dmbzcxhjn/image/upload/672908567a2dbb4c39d1f8f3_image_9_-p-500_vo7noq.png",
+    age: 50,
+    description: "I'm Richard, 50, and two decades of luxury real estate deals have taught me that discretion and professionalism are non-negotiable. My reputation in this market opens doors, and my clients trust me with their multi-million dollar decisions. I'm skilled at finding that sweet spot where both parties feel they've won. Let's talk high-stakes solutions.",
+    imageSrc: "https://res.cloudinary.com/dmbzcxhjn/image/upload/67290d16efecd9bc3a9e88f1_image_11_-p-500_xohplg.jpg",
     color: "#DC2626",
     locked: true,
   },
@@ -561,8 +561,8 @@ export default function CharacterSelection() {
   const [teamId, setTeamId] = useState<string | null>(null);
   const [activePanel, setActivePanel] = useState<{ [key: string]: 'description' | 'scores' }>({
     Jessica: 'description',
-    Mike: 'description',
-    Tom: 'description'
+    Sam: 'description',
+    Richard: 'description'
   });
   const [memberId, setMemberId] = useState<string | null>(null);
   const [performanceGoals, setPerformanceGoals] = useState<{
@@ -614,8 +614,8 @@ const handleStart = async (character: Character) => {
 
   const apiUrls: Record<string, string> = {
     Jessica: 'https://hook.eu2.make.com/pg424kw2fpcnngfkhn8e8n6t3483u6sb',
-    Mike: 'https://hook.eu2.make.com/ofg973x5s1xnbd5bci870elz45jxfb36',
-    Tom: 'https://hook.eu2.make.com/2pk7y8dsgjk5to4baggnmmbolptuxq4q'
+    Sam: 'https://hook.eu2.make.com/b79lhv5tf942syru5j5b9temidsaxcea',
+    Richard: 'https://hook.eu2.make.com/me7ufd956fs9rj0sh6l29r3scrtv7twe'
   };
 
   const apiUrl = apiUrls[character.name];
@@ -841,7 +841,7 @@ return (
                 border: `7px solid ${
                   character.name === 'Jessica'
                     ? 'rgba(35, 197, 95, 0.5)'
-                    : character.name === 'Mike'
+                    : character.name === 'Sam'
                       ? 'rgba(250, 162, 72, 0.5)'
                       : 'rgba(236, 27, 38, 0.5)'
                 }`,
