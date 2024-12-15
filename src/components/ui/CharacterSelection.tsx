@@ -405,34 +405,31 @@ function ScorePanel({
   window.top!.location.href = 'https://app.trainedbyai.com/call-records';
 };
 
-const displayMetrics = metrics || previousMetrics.current;
+  // Use previous metrics while loading
+  const displayMetrics = metrics || previousMetrics.current;
 
-if (!displayMetrics && isLoading) {
+  if (!displayMetrics && isLoading) {
   return (
     <div className="w-full text-sm h-[320px] flex flex-col">
       <div className="flex-grow">
-        <div className="sticky top-0 bg-white py-2 z-10">
-          <h3 className="text-sm font-semibold mb-1">
-            {performanceGoals?.number_of_calls_average || 0} calls left to complete the challenge.
-          </h3>
-          <h3 className="text-sm font-semibold mb-2">
-            Your score from last 0 calls:
-          </h3>
-        </div>
-        {[...Array(7)].map((_, i) => (
-          <div key={i} className="bg-[#f8fdf6] p-3 rounded-lg mb-3 mr-2">
-            <div className="animate-pulse flex justify-between items-center mb-1">
-              <div className="h-4 bg-gray-200 rounded w-24"></div>
-              <div className="h-4 bg-gray-200 rounded w-12"></div>
+        {/* Skeleton loader matching final content structure */}
+        <h3 className="text-sm font-semibold mb-2 bg-white py-2">
+          Score based on past {performanceGoals?.number_of_calls_average || 0} calls
+        </h3>
+          {[...Array(7)].map((_, i) => (
+            <div key={i} className="bg-[#f8fdf6] p-3 rounded-lg mb-3 mr-2">
+              <div className="animate-pulse flex justify-between items-center mb-1">
+                <div className="h-4 bg-gray-200 rounded w-24"></div>
+                <div className="h-4 bg-gray-200 rounded w-12"></div>
+              </div>
+              <div className="h-2 bg-gray-200 rounded-full w-full"></div>
             </div>
-            <div className="h-2 bg-gray-200 rounded-full w-full"></div>
-          </div>
-        ))}
+          ))}
+        </div>
+        <div className="h-12"></div> {/* Space for button */}
       </div>
-      <div className="h-12"></div>
-    </div>
-  );
-}
+    );
+  }
 
   const categories = [
     { key: 'overall_performance', label: 'Overall Performance' },
@@ -444,47 +441,43 @@ if (!displayMetrics && isLoading) {
     { key: 'overall_effectiveness', label: 'Overall Effectiveness' },
   ];
 
-return (
-  <>
-    <style jsx>{scrollbarStyles}</style>
-    <div className="w-full text-sm h-[320px] flex flex-col">
-      <div className="flex-grow overflow-y-auto scrollbar-thin">
-        <div className="sticky top-0 bg-white py-2 z-10">
-          <h3 className="text-sm font-semibold mb-1">
-            {Math.max(0, (performanceGoals?.number_of_calls_average || 0) - (displayMetrics?.total_calls || 0))} calls left to complete the challenge.
-          </h3>
-          <h3 className="text-sm font-semibold mb-2">
-            Your score from last {displayMetrics?.total_calls || 0} calls:
-          </h3>
+  return (
+    <>
+      <style jsx>{scrollbarStyles}</style>
+      <div className="w-full text-sm h-[320px] flex flex-col">
+        <div className="flex-grow overflow-y-auto scrollbar-thin">
+          <h3 className="text-sm font-semibold mb-2 sticky top-0 bg-white py-2 z-10">
+            Score based on past {performanceGoals?.number_of_calls_average || 0} calls
+              </h3>
+          {categories.map(({ key, label }) => (
+            <div key={key} className="bg-[#f8fdf6] p-3 rounded-lg mb-3 mr-2">
+              <div className="flex justify-between items-center mb-1">
+                <span className={`font-medium ${key === 'overall_performance' ? 'text-base' : 'text-xs'}`}>
+                  {label}
+                </span>
+                <span className={`font-bold text-green-500 ${key === 'overall_performance' ? 'text-lg' : 'text-xs'}`}>
+                  {(displayMetrics?.[key as keyof PerformanceMetrics] ?? 0)}/100
+                </span>
+              </div>
+              <div className={`bg-gray-200 rounded-full overflow-hidden ${key === 'overall_performance' ? 'h-3' : 'h-2'}`}>
+                <div 
+                  className="h-full bg-green-500 rounded-full transition-all duration-300"
+                  style={{ width: `${displayMetrics?.[key as keyof PerformanceMetrics] ?? 0}%` }}
+                />
+              </div>
+            </div>
+          ))}
         </div>
-        {categories.map(({ key, label }) => (
-          <div key={key} className="bg-[#f8fdf6] p-3 rounded-lg mb-3 mr-2">
-            <div className="flex justify-between items-center mb-1">
-              <span className={`font-medium ${key === 'overall_performance' ? 'text-base' : 'text-xs'}`}>
-                {label}
-              </span>
-              <span className={`font-bold text-green-500 ${key === 'overall_performance' ? 'text-lg' : 'text-xs'}`}>
-                {(displayMetrics?.[key as keyof PerformanceMetrics] ?? 0)}/100
-              </span>
-            </div>
-            <div className={`bg-gray-200 rounded-full overflow-hidden ${key === 'overall_performance' ? 'h-3' : 'h-2'}`}>
-              <div 
-                className="h-full bg-green-500 rounded-full transition-all duration-300"
-                style={{ width: `${displayMetrics?.[key as keyof PerformanceMetrics] ?? 0}%` }}
-              />
-            </div>
-          </div>
-        ))}
+        <button 
+          onClick={handleRecordsClick}
+          className="w-full py-3 rounded-[20px] text-black font-semibold text-lg transition-all hover:opacity-90 hover:shadow-lg bg-white shadow-md mb-6"
+        >
+          Go to Call Records
+        </button>
       </div>
-      <button 
-        onClick={handleRecordsClick}
-        className="w-full py-3 rounded-[20px] text-black font-semibold text-lg transition-all hover:opacity-90 hover:shadow-lg bg-white shadow-md mb-6"
-      >
-        Go to Call Records
-      </button>
-    </div>
-  </>
-);
+    </>
+  );
+}
 
 function LockedOverlay({ 
   previousAssistant, 
@@ -561,6 +554,8 @@ function LockedOverlay({
       </div>
     </div>
   );
+}
+
 
 export default function CharacterSelection() {
   const [teamId, setTeamId] = useState<string | null>(null);
@@ -958,6 +953,6 @@ return (
         );
       })}
     </div>
-</div>
-  );
+  </div>
+);
 }
