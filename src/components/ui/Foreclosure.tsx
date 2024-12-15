@@ -328,29 +328,29 @@ const AnimatedStartButton: React.FC<AnimatedStartButtonProps> = ({ onStart, isLo
 
 const characters: Character[] = [
   {
-    name: "Jessica",
+    name: "Lisa",
     difficulty: "Easy",
-    age: 28,
-    description: "I'm Jessica, 28, with my brand new real estate license still hot off the press. Sure, I aced the exam, but now I'm learning that real success is all about building solid investor connections. Everyone talks about off-market deals being where the magic happens, but I need a real strategy to get my foot in that door. Help me turn my energy into actual results.",
-    imageSrc: "https://res.cloudinary.com/dmbzcxhjn/image/upload/672908562f6b05c2f5694d8a_image_12_-p-500_ufipmi.png",
+    age: 33,
+    description: "I'm Lisa, 33, and as a single mom, my biggest fear is losing the home where my kids feel safe. The foreclosure notices are piling up, and I'm running out of time and options. Between work and taking care of my family, I'm overwhelmed trying to understand short sales and loan modifications. I need real solutions, not just temporary fixes.",
+    imageSrc: "https://res.cloudinary.com/dmbzcxhjn/image/upload/67290855aa69766f952d369a_image_1_-p-500_uyvord.webp",
     color: "#23c55f",
     locked: false, // Add this line
   },
   {
-    name: "Mike",
+    name: "Paul",
     difficulty: "Intermediate",
-    age: 40,
-    description: "I'm Mike, 45, and I've got my hands dirty in enough real estate deals to know what works and what doesn't. As a contractor, I see properties for what they really are - no fancy talk needed. Looking into lease options for my property sale, but I need to make sure I'm not boxing myself into a corner. Let's talk real numbers and real scenarios.",
-    imageSrc: "https://res.cloudinary.com/dmbzcxhjn/image/upload/67290d0fbf7ca486c43a332c_image_10_-p-500_ed6jna.jpg",
+    age: 48,
+    description: "I'm Paul, 48, and despite keeping it together at work managing others' problems, I'm quietly drowning in my own. These mortgage payments keep getting harder to meet, and I can't sleep thinking about losing my house. I know I need to talk to my lender about modifying my loan, but honestly, I don't even know where to start with this process.",
+    imageSrc: "https://res.cloudinary.com/dmbzcxhjn/image/upload/672908510e77051b93177ae9_image_13_-p-500_crxrwd.png",
     color: "#FCA147",
     locked: true,
   },
   {
-    name: "Tom",
+    name: "Zara",
     difficulty: "Expert",
-    age: 55,
-    description: "I'm Tom, 60, and after decades of practicing law and building my real estate portfolio, I've learned to spot potential pitfalls from a mile away. Subject-to deals intrigue me from an investment perspective, but the legal nuances keep me up at night. I need to understand every clause, contingency, and potential liability before moving forward.",
-    imageSrc: "https://res.cloudinary.com/dmbzcxhjn/image/upload/672908567a2dbb4c39d1f8f3_image_9_-p-500_vo7noq.png",
+    age: 58,
+    description: "I'm Zara, 58, and running my own business taught me plenty about property ownership - until everything went sideways. Now I'm staring at foreclosure with multiple liens tangled up in the mix. I've handled tough situations before, but this legal maze is something else. I need a clear strategy to untangle this mess before I lose everything.",
+    imageSrc: "https://res.cloudinary.com/dmbzcxhjn/image/upload/672908596884b307a27a5787_image_14_-p-500_ata5g2.png",
     color: "#DC2626",
     locked: true,
   },
@@ -560,9 +560,9 @@ function LockedOverlay({
 export default function CharacterSelection() {
   const [teamId, setTeamId] = useState<string | null>(null);
   const [activePanel, setActivePanel] = useState<{ [key: string]: 'description' | 'scores' }>({
-    Jessica: 'description',
-    Mike: 'description',
-    Tom: 'description'
+    Lisa: 'description',
+    Paul: 'description',
+    Zara: 'description'
   });
   const [memberId, setMemberId] = useState<string | null>(null);
   const [performanceGoals, setPerformanceGoals] = useState<{
@@ -613,9 +613,9 @@ const handleStart = async (character: Character) => {
   }
 
   const apiUrls: Record<string, string> = {
-    Jessica: 'https://hook.eu2.make.com/pg424kw2fpcnngfkhn8e8n6t3483u6sb',
-    Mike: 'https://hook.eu2.make.com/ofg973x5s1xnbd5bci870elz45jxfb36',
-    Tom: 'https://hook.eu2.make.com/2pk7y8dsgjk5to4baggnmmbolptuxq4q'
+    Lisa: 'https://hook.eu2.make.com/enzvszbf83jcts2qemuxp8y5hspyad6t',
+    Paul: 'https://hook.eu2.make.com/oohanevru96sko9ixxv8yjujryew537n',
+    Zara: 'https://hook.eu2.make.com/6xx7bo591cqhhwjgshx8o7rvvskipxn7'
   };
 
   const apiUrl = apiUrls[character.name];
@@ -839,9 +839,9 @@ return (
               className="w-full h-full absolute inset-0" 
               style={{ 
                 border: `7px solid ${
-                  character.name === 'Jessica'
+                  character.name === 'Lisa'
                     ? 'rgba(35, 197, 95, 0.5)'
-                    : character.name === 'Mike'
+                    : character.name === 'Paul'
                       ? 'rgba(250, 162, 72, 0.5)'
                       : 'rgba(236, 27, 38, 0.5)'
                 }`,
