@@ -368,7 +368,7 @@ function ScorePanel({
   performanceGoals: {
     overall_performance_goal: number;
     number_of_calls_average: number;
-  }; // Remove | null here since we're handling it with optional chaining
+  };
 }) {
   const [metrics, setMetrics] = useState<PerformanceMetrics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -401,21 +401,26 @@ function ScorePanel({
   }, [memberId, characterName, teamId]);
 
   const handleRecordsClick = (e: React.MouseEvent) => {
-  e.preventDefault();
-  window.top!.location.href = 'https://app.trainedbyai.com/call-records';
-};
+    e.preventDefault();
+    window.top!.location.href = 'https://app.trainedbyai.com/call-records';
+  };
 
   // Use previous metrics while loading
   const displayMetrics = metrics || previousMetrics.current;
 
+  // Calculate remaining calls
+  const remainingCalls = performanceGoals.number_of_calls_average - (displayMetrics?.total_calls || 0);
+  const completedCalls = displayMetrics?.total_calls || 0;
+
   if (!displayMetrics && isLoading) {
-  return (
-    <div className="w-full text-sm h-[320px] flex flex-col">
-      <div className="flex-grow">
-        {/* Skeleton loader matching final content structure */}
-        <h3 className="text-sm font-semibold mb-2 bg-white py-2">
-          Score based on past {performanceGoals?.number_of_calls_average || 0} calls
-        </h3>
+    return (
+      <div className="w-full text-sm h-[320px] flex flex-col">
+        <div className="flex-grow">
+          {/* Skeleton loader with new header structure */}
+          <h3 className="text-sm font-semibold mb-1 bg-white py-2">
+            <div className="animate-pulse h-4 bg-gray-200 rounded w-48 mb-2"></div>
+            <div className="animate-pulse h-4 bg-gray-200 rounded w-40"></div>
+          </h3>
           {[...Array(7)].map((_, i) => (
             <div key={i} className="bg-[#f8fdf6] p-3 rounded-lg mb-3 mr-2">
               <div className="animate-pulse flex justify-between items-center mb-1">
@@ -426,10 +431,61 @@ function ScorePanel({
             </div>
           ))}
         </div>
-        <div className="h-12"></div> {/* Space for button */}
+        <div className="h-12"></div>
       </div>
     );
   }
+
+  const categories = [
+    { key: 'overall_performance', label: 'Overall Performance' },
+    { key: 'engagement', label: 'Engagement' },
+    { key: 'objection_handling', label: 'Objection Handling' },
+    { key: 'information_gathering', label: 'Information Gathering' },
+    { key: 'program_explanation', label: 'Program Explanation' },
+    { key: 'closing_skills', label: 'Closing Skills' },
+    { key: 'overall_effectiveness', label: 'Overall Effectiveness' },
+  ];
+
+  return (
+    <>
+      <style jsx>{scrollbarStyles}</style>
+      <div className="w-full text-sm h-[320px] flex flex-col">
+        <div className="flex-grow overflow-y-auto scrollbar-thin">
+          <h3 className="text-sm font-semibold mb-2 sticky top-0 bg-white py-2 z-10">
+            <div className="mb-1">
+              <strong>{remainingCalls}</strong> calls left to complete the challenge.
+            </div>
+            Your score from last <strong>{completedCalls}</strong> calls:
+          </h3>
+          {categories.map(({ key, label }) => (
+            <div key={key} className="bg-[#f8fdf6] p-3 rounded-lg mb-3 mr-2">
+              <div className="flex justify-between items-center mb-1">
+                <span className={`font-medium ${key === 'overall_performance' ? 'text-base' : 'text-xs'}`}>
+                  {label}
+                </span>
+                <span className={`font-bold text-green-500 ${key === 'overall_performance' ? 'text-lg' : 'text-xs'}`}>
+                  {(displayMetrics?.[key as keyof PerformanceMetrics] ?? 0)}/100
+                </span>
+              </div>
+              <div className={`bg-gray-200 rounded-full overflow-hidden ${key === 'overall_performance' ? 'h-3' : 'h-2'}`}>
+                <div 
+                  className="h-full bg-green-500 rounded-full transition-all duration-300"
+                  style={{ width: `${displayMetrics?.[key as keyof PerformanceMetrics] ?? 0}%` }}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+        <button 
+          onClick={handleRecordsClick}
+          className="w-full py-3 rounded-[20px] text-black font-semibold text-lg transition-all hover:opacity-90 hover:shadow-lg bg-white shadow-md mb-6"
+        >
+          Go to Call Records
+        </button>
+      </div>
+    </>
+  );
+}
 
   const categories = [
     { key: 'overall_performance', label: 'Overall Performance' },
