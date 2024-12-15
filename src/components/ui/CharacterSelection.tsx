@@ -428,6 +428,24 @@ if (!displayMetrics && isLoading) {
               <div className="h-4 bg-gray-200 rounded w-24"></div>
               <div className="h-4 bg-gray-200 rounded w-12"></div>
             </div>
+         if (!displayMetrics && isLoading) {
+  return (
+    <div className="w-full text-sm h-[320px] flex flex-col">
+      <div className="flex-grow">
+        <div className="sticky top-0 bg-white py-2 z-10">
+          <h3 className="text-sm font-semibold mb-1">
+            {performanceGoals?.number_of_calls_average || 0} calls left to complete the challenge.
+          </h3>
+          <h3 className="text-sm font-semibold mb-2">
+            Your score from last 0 calls:
+          </h3>
+        </div>
+        {[...Array(7)].map((_, i) => (
+          <div key={i} className="bg-[#f8fdf6] p-3 rounded-lg mb-3 mr-2">
+            <div className="animate-pulse flex justify-between items-center mb-1">
+              <div className="h-4 bg-gray-200 rounded w-24"></div>
+              <div className="h-4 bg-gray-200 rounded w-12"></div>
+            </div>
             <div className="h-2 bg-gray-200 rounded-full w-full"></div>
           </div>
         ))}
@@ -459,7 +477,6 @@ return (
           <h3 className="text-sm font-semibold mb-2">
             Your score from last {displayMetrics?.total_calls || 0} calls:
           </h3>
-        </div>
         </div>
         {categories.map(({ key, label }) => (
           <div key={key} className="bg-[#f8fdf6] p-3 rounded-lg mb-3 mr-2">
