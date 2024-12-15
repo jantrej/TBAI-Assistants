@@ -328,11 +328,11 @@ const AnimatedStartButton: React.FC<AnimatedStartButtonProps> = ({ onStart, isLo
 
 const characters: Character[] = [
   {
-    name: "Rachel",
+    name: "Jessica",
     difficulty: "Easy",
-    age: 25,
-    description: "I'm Rachel, a 30-year-old teacher who's trying to understand this whole seller financing thing. When I'm teaching my kids, we break down complex topics into simple steps, and that's exactly what I need right now. I've heard it could be a good option for selling my home, but honestly, all these financial terms are a bit overwhelming. Can we start with the basics?",
-    imageSrc: "https://res.cloudinary.com/dmbzcxhjn/image/upload/672b1e8d64a9a176ff36b867_image_2_-p-500_ej3zns.jpg",
+    age: 28,
+    description: "I'm Jessica, 28, with my brand new real estate license still hot off the press. Sure, I aced the exam, but now I'm learning that real success is all about building solid investor connections. Everyone talks about off-market deals being where the magic happens, but I need a real strategy to get my foot in that door. Help me turn my energy into actual results.",
+    imageSrc: "https://res.cloudinary.com/dmbzcxhjn/image/upload/672908562f6b05c2f5694d8a_image_12_-p-500_ufipmi.png",
     color: "#23c55f",
     locked: false, // Add this line
   },
@@ -560,7 +560,7 @@ function LockedOverlay({
 export default function CharacterSelection() {
   const [teamId, setTeamId] = useState<string | null>(null);
   const [activePanel, setActivePanel] = useState<{ [key: string]: 'description' | 'scores' }>({
-    Rachel: 'description',
+    Jessica: 'description',
     Mike: 'description',
     Tom: 'description'
   });
@@ -613,7 +613,7 @@ const handleStart = async (character: Character) => {
   }
 
   const apiUrls: Record<string, string> = {
-    Rachel: 'https://hook.eu2.make.com/litqktxn852u54vjf6c5ms7moodxkqi2',
+    Jessica: 'https://hook.eu2.make.com/pg424kw2fpcnngfkhn8e8n6t3483u6sb',
     Mike: 'https://hook.eu2.make.com/ofg973x5s1xnbd5bci870elz45jxfb36',
     Tom: 'https://hook.eu2.make.com/2pk7y8dsgjk5to4baggnmmbolptuxq4q'
   };
@@ -839,7 +839,7 @@ return (
               className="w-full h-full absolute inset-0" 
               style={{ 
                 border: `7px solid ${
-                  character.name === 'Rachel'
+                  character.name === 'Jessica'
                     ? 'rgba(35, 197, 95, 0.5)'
                     : character.name === 'Mike'
                       ? 'rgba(250, 162, 72, 0.5)'
