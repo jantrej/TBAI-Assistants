@@ -418,9 +418,6 @@ useEffect(() => {
     return () => clearInterval(interval);
   }, [memberId, characterName, teamId, fetchMetrics]);
 
-    return () => clearInterval(interval);
-  }, [memberId, characterName, teamId, fetchMetrics]);
-
   // Use previous metrics while loading
   const displayMetrics = metrics || previousMetrics.current;
 
