@@ -374,11 +374,44 @@ function ScorePanel({
   const [isLoading, setIsLoading] = useState(true);
   const previousMetrics = useRef<PerformanceMetrics | null>(null);
   
-  useEffect(() => {
+  const fetchMetrics = async () => {
+    try {
+      const timestamp = new Date().getTime();
+      const response = await fetch(
+        `/api/character-performance?memberId=${memberId}&characterName=${characterName}&t=${timestamp}`
+      );
+      
+      if (!response.ok) {
+        throw new Error(await response.text());
+      }
+      
+      const data = await response.json();
+      previousMetrics.current = metrics;  // Save current metrics before updating
+      setMetrics(data);
+    } catch (error) {
+      console.error('Error fetching metrics:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+useEffect(() => {
+    const interval = setInterval(() => {
+      if (memberId && characterName) {
+        fetchMetrics();
+      }
+    }, 5000); // Check every 5 seconds
+
+    return () => clearInterval(interval);
+  }, [memberId, characterName]);  
+  
+useEffect(() => {
     const fetchMetrics = async () => {
+      // Add a timestamp to prevent caching
+      const timestamp = new Date().getTime();
       try {
         const response = await fetch(
-          `/api/character-performance?memberId=${memberId}&characterName=${characterName}`
+          `/api/character-performance?memberId=${memberId}&characterName=${characterName}&t=${timestamp}`
         );
         
         if (!response.ok) {
