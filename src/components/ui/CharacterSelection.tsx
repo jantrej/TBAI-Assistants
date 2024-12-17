@@ -356,6 +356,8 @@ const characters: Character[] = [
   },
 ]
 
+// Find this section in ScorePanel and REPLACE IT ENTIRELY with this fixed version:
+
 function ScorePanel({ 
   characterName, 
   memberId,
@@ -368,34 +370,18 @@ function ScorePanel({
   performanceGoals: {
     overall_performance_goal: number;
     number_of_calls_average: number;
-  }; // Remove | null here since we're handling it with optional chaining
+  }; 
 }) {
   const [metrics, setMetrics] = useState<PerformanceMetrics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const previousMetrics = useRef<PerformanceMetrics | null>(null);
-  
-  const fetchMetrics = async () => {
-    try {
-      const timestamp = new Date().getTime();
-      const response = await fetch(
-        `/api/character-performance?memberId=${memberId}&characterName=${characterName}&t=${timestamp}`
-      );
-      
-      if (!response.ok) {
-        throw new Error(await response.text());
-      }
-      
-      const data = await response.json();
-      previousMetrics.current = metrics;  // Save current metrics before updating
-      setMetrics(data);
-    } catch (error) {
-      console.error('Error fetching metrics:', error);
-    } finally {
-      setIsLoading(false);
-    }
+
+  const handleRecordsClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    window.top!.location.href = 'https://app.trainedbyai.com/call-records';
   };
   
-const fetchMetrics = useCallback(async () => {
+  const fetchMetrics = useCallback(async () => {
     try {
       const timestamp = new Date().getTime();
       const response = await fetch(
@@ -414,8 +400,9 @@ const fetchMetrics = useCallback(async () => {
     } finally {
       setIsLoading(false);
     }
-  }, [memberId, characterName]); // Add dependencies here
-useEffect(() => {
+  }, [memberId, characterName, metrics]); // Added metrics as dependency
+
+  useEffect(() => {
     // Initial fetch
     if (memberId && characterName) {
       fetchMetrics();
@@ -429,24 +416,20 @@ useEffect(() => {
     }, 5000);
 
     return () => clearInterval(interval);
-
-  const handleRecordsClick = (e: React.MouseEvent) => {
-  e.preventDefault();
-  window.top!.location.href = 'https://app.trainedbyai.com/call-records';
-};
+  }, [memberId, characterName, teamId, fetchMetrics]);
 
   // Use previous metrics while loading
   const displayMetrics = metrics || previousMetrics.current;
 
   if (!displayMetrics && isLoading) {
-  return (
-    <div className="w-full text-sm h-[320px] flex flex-col">
-      <div className="flex-grow">
-        {/* Skeleton loader matching final content structure */}
-        <h3 className="text-sm font-semibold mb-2 bg-white py-2">
-          <div className="h-4 bg-gray-200 rounded w-48 mb-2"></div>
-          <div className="h-4 bg-gray-200 rounded w-56"></div>
-        </h3>
+    return (
+      <div className="w-full text-sm h-[320px] flex flex-col">
+        <div className="flex-grow">
+          {/* Skeleton loader matching final content structure */}
+          <h3 className="text-sm font-semibold mb-2 bg-white py-2">
+            <div className="h-4 bg-gray-200 rounded w-48 mb-2"></div>
+            <div className="h-4 bg-gray-200 rounded w-56"></div>
+          </h3>
           {[...Array(7)].map((_, i) => (
             <div key={i} className="bg-[#f8fdf6] p-3 rounded-lg mb-3 mr-2">
               <div className="animate-pulse flex justify-between items-center mb-1">
@@ -479,7 +462,10 @@ useEffect(() => {
         <div className="flex-grow overflow-y-auto scrollbar-thin">
           <h3 className="text-sm font-semibold mb-2 sticky top-0 bg-white py-2 z-10">
             <div className="mb-1">
-              {Math.max(0, performanceGoals.number_of_calls_average - (displayMetrics?.total_calls || 0))} calls left to complete the challenge.
+              {performanceGoals && displayMetrics ? 
+                `${Math.max(0, performanceGoals.number_of_calls_average - (displayMetrics.total_calls || 0))} calls left to complete the challenge.` :
+                'Loading...'
+              }
             </div>
             <div>
               Your score from last {displayMetrics?.total_calls || 0} calls:
@@ -513,7 +499,7 @@ useEffect(() => {
       </div>
     </>
   );
-};
+}
 
 function LockedOverlay({ 
   previousAssistant, 
