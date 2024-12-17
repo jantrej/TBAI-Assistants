@@ -429,26 +429,6 @@ useEffect(() => {
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [memberId, characterName, teamId, fetchMetrics]); // Include all dependencies
-        
-        if (!response.ok) {
-          throw new Error(await response.text());
-        }
-        
-        const data = await response.json();
-        previousMetrics.current = metrics;  // Save current metrics before updating
-        setMetrics(data);
-      } catch (error) {
-        console.error('Error fetching metrics:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    if (memberId && characterName) {
-      fetchMetrics();
-    }
-  }, [memberId, characterName, teamId]);
 
   const handleRecordsClick = (e: React.MouseEvent) => {
   e.preventDefault();
