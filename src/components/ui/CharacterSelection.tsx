@@ -418,6 +418,35 @@ useEffect(() => {
     return () => clearInterval(interval);
   }, [memberId, characterName, teamId, fetchMetrics]);
 
+  useEffect(() => {
+    const resetChallenge = async () => {
+      try {
+        if (displayMetrics?.total_calls >= performanceGoals.number_of_calls_average) {
+          console.log('Challenge completed, resetting metrics...');
+          const response = await fetch('/api/character-performance/reset', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              memberId,
+              characterName,
+              teamId
+            })
+          });
+
+          if (!response.ok) {
+            throw new Error('Failed to reset challenge');
+          }
+
+          // Refresh metrics after reset
+          fetchMetrics();
+        }
+      } catch (error) {
+        console.error('Error resetting challenge:', error);
+      }
+    };
+
   // Use previous metrics while loading
   const displayMetrics = metrics || previousMetrics.current;
 
