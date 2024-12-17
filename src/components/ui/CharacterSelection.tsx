@@ -394,25 +394,42 @@ function ScorePanel({
       setIsLoading(false);
     }
   };
-
+  
+const fetchMetrics = useCallback(async () => {
+    try {
+      const timestamp = new Date().getTime();
+      const response = await fetch(
+        `/api/character-performance?memberId=${memberId}&characterName=${characterName}&t=${timestamp}`
+      );
+      
+      if (!response.ok) {
+        throw new Error(await response.text());
+      }
+      
+      const data = await response.json();
+      previousMetrics.current = metrics;  // Save current metrics before updating
+      setMetrics(data);
+    } catch (error) {
+      console.error('Error fetching metrics:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [memberId, characterName]); // Add dependencies here
 useEffect(() => {
+    // Initial fetch
+    if (memberId && characterName) {
+      fetchMetrics();
+    }
+
+    // Set up polling
     const interval = setInterval(() => {
       if (memberId && characterName) {
         fetchMetrics();
       }
-    }, 5000); // Check every 5 seconds
+    }, 5000);
 
     return () => clearInterval(interval);
-  }, [memberId, characterName]);  
-  
-useEffect(() => {
-    const fetchMetrics = async () => {
-      // Add a timestamp to prevent caching
-      const timestamp = new Date().getTime();
-      try {
-        const response = await fetch(
-          `/api/character-performance?memberId=${memberId}&characterName=${characterName}&t=${timestamp}`
-        );
+  }, [memberId, characterName, teamId, fetchMetrics]); // Include all dependencies
         
         if (!response.ok) {
           throw new Error(await response.text());
