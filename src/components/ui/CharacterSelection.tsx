@@ -383,9 +383,11 @@ function ScorePanel({
   
   const fetchMetrics = useCallback(async () => {
     try {
+      // Add random parameter to prevent caching
       const timestamp = new Date().getTime();
+      const random = Math.random();
       const response = await fetch(
-        `/api/character-performance?memberId=${memberId}&characterName=${characterName}&t=${timestamp}`
+        `/api/character-performance?memberId=${memberId}&characterName=${characterName}&t=${timestamp}&r=${random}`
       );
       
       if (!response.ok) {
@@ -402,18 +404,19 @@ function ScorePanel({
     }
   }, [memberId, characterName, metrics]); // Added metrics as dependency
 
-  useEffect(() => {
+useEffect(() => {
     // Initial fetch
     if (memberId && characterName) {
       fetchMetrics();
     }
-
     // Set up polling
     const interval = setInterval(() => {
       if (memberId && characterName) {
         fetchMetrics();
       }
     }, 5000);
+    return () => clearInterval(interval);
+  }, [memberId, characterName, teamId, fetchMetrics]);
 
     return () => clearInterval(interval);
   }, [memberId, characterName, teamId, fetchMetrics]);
