@@ -513,7 +513,7 @@ useEffect(() => {
       </div>
     </>
   );
-}
+};
 
 function LockedOverlay({ 
   previousAssistant, 
