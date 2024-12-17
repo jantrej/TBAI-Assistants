@@ -375,7 +375,64 @@ function ScorePanel({
   const [metrics, setMetrics] = useState<PerformanceMetrics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const previousMetrics = useRef<PerformanceMetrics | null>(null);
+  const fetchMetrics = useCallback(async () => {
+    try {
+      const response = await fetch(
+        `/api/character-performance?memberId=${memberId}&characterName=${characterName}`
+      );
+      
+      if (!response.ok) {
+        throw new Error(await response.text());
+      }
+      
+      const data = await response.json();
+      previousMetrics.current = metrics;
+      setMetrics(data);
+    } catch (error) {
+      console.error('Error fetching metrics:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [memberId, characterName, metrics]);
 
+  useEffect(() => {
+    if (memberId && characterName) {
+      fetchMetrics();
+    }
+  }, [memberId, characterName, teamId, fetchMetrics]);
+
+  useEffect(() => {
+    const resetChallenge = async () => {
+      try {
+        if (displayMetrics?.total_calls >= performanceGoals.number_of_calls_average) {
+          console.log('Challenge completed, resetting metrics...');
+          const response = await fetch('/api/character-performance/reset', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              memberId,
+              characterName,
+              teamId
+            })
+          });
+
+          if (!response.ok) {
+            throw new Error('Failed to reset challenge');
+          }
+
+          await fetchMetrics();
+        }
+      } catch (error) {
+        console.error('Error resetting challenge:', error);
+      }
+    };
+
+    if (displayMetrics && performanceGoals) {
+      resetChallenge();
+    }
+  }, [displayMetrics?.total_calls, memberId, characterName, teamId, performanceGoals, fetchMetrics]);
   const handleRecordsClick = (e: React.MouseEvent) => {
     e.preventDefault();
     window.top!.location.href = 'https://app.trainedbyai.com/call-records';
