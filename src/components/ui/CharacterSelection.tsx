@@ -414,7 +414,8 @@ function ScorePanel({
       <div className="flex-grow">
         {/* Skeleton loader matching final content structure */}
         <h3 className="text-sm font-semibold mb-2 bg-white py-2">
-          Score based on past {performanceGoals?.number_of_calls_average || 0} calls
+          <div className="h-4 bg-gray-200 rounded w-48 mb-2"></div>
+          <div className="h-4 bg-gray-200 rounded w-56"></div>
         </h3>
           {[...Array(7)].map((_, i) => (
             <div key={i} className="bg-[#f8fdf6] p-3 rounded-lg mb-3 mr-2">
@@ -447,8 +448,13 @@ function ScorePanel({
       <div className="w-full text-sm h-[320px] flex flex-col">
         <div className="flex-grow overflow-y-auto scrollbar-thin">
           <h3 className="text-sm font-semibold mb-2 sticky top-0 bg-white py-2 z-10">
-            Score based on past {performanceGoals?.number_of_calls_average || 0} calls
-              </h3>
+            <div className="mb-1">
+              {Math.max(0, performanceGoals.number_of_calls_average - (displayMetrics?.total_calls || 0))} calls left to complete the challenge.
+            </div>
+            <div>
+              Your score from last {displayMetrics?.total_calls || 0} calls:
+            </div>
+          </h3>
           {categories.map(({ key, label }) => (
             <div key={key} className="bg-[#f8fdf6] p-3 rounded-lg mb-3 mr-2">
               <div className="flex justify-between items-center mb-1">
