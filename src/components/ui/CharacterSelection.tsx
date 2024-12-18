@@ -480,6 +480,8 @@ function ScorePanel({
     );
   }
 
+  // ... keep all the code before categories array ...
+
   const categories = [
     { key: 'overall_performance', label: 'Overall Performance' },
     { key: 'engagement', label: 'Engagement' },
@@ -497,7 +499,7 @@ function ScorePanel({
         <div className="flex-grow overflow-y-auto scrollbar-thin">
           <h3 className="text-sm font-semibold mb-2 sticky top-0 bg-white py-2 z-10">
             <div className="mb-1">
-              {Math.max(0, performanceGoals.number_of_calls_average - (displayMetrics?.total_calls || 0))} calls left to complete the challenge.
+              {`${Math.max(0, performanceGoals.number_of_calls_average - (displayMetrics?.total_calls || 0))} calls left to complete the challenge.`}
             </div>
             <div>
               Your score from last {displayMetrics?.total_calls || 0} calls:
