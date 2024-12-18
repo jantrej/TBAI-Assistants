@@ -422,7 +422,6 @@ useEffect(() => {
     const resetChallenge = async () => {
       const currentCalls = displayMetrics?.total_calls || 0;
       try {
-        // Changed condition to compare exact equality
         if (currentCalls === performanceGoals.number_of_calls_average) {
           console.log('Exactly hit target calls, resetting metrics...');
           const response = await fetch('/api/character-performance/reset', {
@@ -473,6 +472,7 @@ useEffect(() => {
       resetChallenge();
     }
   }, [displayMetrics, performanceGoals, memberId, characterName, teamId, fetchMetrics]);
+  
           console.log('Challenge completed, resetting metrics...');
           const response = await fetch('/api/character-performance/reset', {
             method: 'POST',
