@@ -418,11 +418,61 @@ function ScorePanel({
     return () => clearInterval(interval);
   }, [memberId, characterName, fetchMetrics]);
 
-  useEffect(() => {
+useEffect(() => {
     const resetChallenge = async () => {
       const currentCalls = displayMetrics?.total_calls || 0;
       try {
-        if (currentCalls >= performanceGoals.number_of_calls_average) {
+        // Changed condition to compare exact equality
+        if (currentCalls === performanceGoals.number_of_calls_average) {
+          console.log('Exactly hit target calls, resetting metrics...');
+          const response = await fetch('/api/character-performance/reset', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              memberId,
+              characterName,
+              teamId
+            })
+          });
+
+          if (!response.ok) {
+            throw new Error('Failed to reset challenge');
+          }
+
+          console.log('Reset successful, refreshing metrics...');
+          await fetchMetrics();
+        } else if (currentCalls > performanceGoals.number_of_calls_average) {
+          console.log('Exceeded target calls, forcing reset...');
+          const response = await fetch('/api/character-performance/reset', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              memberId,
+              characterName,
+              teamId
+            })
+          });
+
+          if (!response.ok) {
+            throw new Error('Failed to reset challenge');
+          }
+
+          console.log('Force reset successful, refreshing metrics...');
+          await fetchMetrics();
+        }
+      } catch (error) {
+        console.error('Error resetting challenge:', error);
+      }
+    };
+
+    if (displayMetrics && performanceGoals) {
+      resetChallenge();
+    }
+  }, [displayMetrics, performanceGoals, memberId, characterName, teamId, fetchMetrics]);
           console.log('Challenge completed, resetting metrics...');
           const response = await fetch('/api/character-performance/reset', {
             method: 'POST',
