@@ -375,6 +375,12 @@ function ScorePanel({
   const [metrics, setMetrics] = useState<PerformanceMetrics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const previousMetrics = useRef<PerformanceMetrics | null>(null);
+  const displayMetrics = metrics || previousMetrics.current;  // Moved this up
+
+  const handleRecordsClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    window.top!.location.href = 'https://app.trainedbyai.com/call-records';
+  };
 
   const fetchMetrics = useCallback(async () => {
     try {
@@ -446,12 +452,15 @@ function ScorePanel({
     }
   }, [displayMetrics, performanceGoals, memberId, characterName, teamId, fetchMetrics]);
 
-  const handleRecordsClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    window.top!.location.href = 'https://app.trainedbyai.com/call-records';
-  };
-
-  const displayMetrics = metrics || previousMetrics.current;
+  const categories = [
+    { key: 'overall_performance', label: 'Overall Performance' },
+    { key: 'engagement', label: 'Engagement' },
+    { key: 'objection_handling', label: 'Objection Handling' },
+    { key: 'information_gathering', label: 'Information Gathering' },
+    { key: 'program_explanation', label: 'Program Explanation' },
+    { key: 'closing_skills', label: 'Closing Skills' },
+    { key: 'overall_effectiveness', label: 'Overall Effectiveness' },
+  ];
 
   if (!displayMetrics && isLoading) {
     return (
@@ -475,16 +484,6 @@ function ScorePanel({
       </div>
     );
   }
-
-  const categories = [
-    { key: 'overall_performance', label: 'Overall Performance' },
-    { key: 'engagement', label: 'Engagement' },
-    { key: 'objection_handling', label: 'Objection Handling' },
-    { key: 'information_gathering', label: 'Information Gathering' },
-    { key: 'program_explanation', label: 'Program Explanation' },
-    { key: 'closing_skills', label: 'Closing Skills' },
-    { key: 'overall_effectiveness', label: 'Overall Effectiveness' },
-  ];
 
   return (
     <>
