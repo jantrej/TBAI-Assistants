@@ -378,7 +378,6 @@ function ScorePanel({
 
   const fetchMetrics = useCallback(async () => {
     try {
-      // Add random parameter to prevent caching
       const timestamp = new Date().getTime();
       const random = Math.random();
       const response = await fetch(
@@ -390,7 +389,7 @@ function ScorePanel({
       }
       
       const data = await response.json();
-      previousMetrics.current = metrics;  // Save current metrics before updating
+      previousMetrics.current = metrics;
       setMetrics(data);
     } catch (error) {
       console.error('Error fetching metrics:', error);
@@ -400,23 +399,23 @@ function ScorePanel({
   }, [memberId, characterName, metrics]);
 
   useEffect(() => {
-    // Initial fetch
     if (memberId && characterName) {
       fetchMetrics();
     }
-    // Set up polling
+
     const interval = setInterval(() => {
       if (memberId && characterName) {
         fetchMetrics();
       }
-    }, 2000); // Poll every 2 seconds
+    }, 2000);
+
     return () => clearInterval(interval);
-  }, [memberId, characterName, teamId, fetchMetrics]);
+  }, [memberId, characterName, fetchMetrics]);
 
   useEffect(() => {
     const resetChallenge = async () => {
+      const currentCalls = displayMetrics?.total_calls || 0;
       try {
-        const currentCalls = displayMetrics?.total_calls || 0;
         if (currentCalls >= performanceGoals.number_of_calls_average) {
           console.log('Challenge completed, resetting metrics...');
           const response = await fetch('/api/character-performance/reset', {
@@ -435,7 +434,6 @@ function ScorePanel({
             throw new Error('Failed to reset challenge');
           }
 
-          // Refresh metrics after reset
           await fetchMetrics();
         }
       } catch (error) {
@@ -446,21 +444,19 @@ function ScorePanel({
     if (displayMetrics && performanceGoals) {
       resetChallenge();
     }
-  }, [displayMetrics?.total_calls, memberId, characterName, teamId, performanceGoals, fetchMetrics]);
+  }, [displayMetrics, performanceGoals, memberId, characterName, teamId, fetchMetrics]);
 
   const handleRecordsClick = (e: React.MouseEvent) => {
     e.preventDefault();
     window.top!.location.href = 'https://app.trainedbyai.com/call-records';
   };
 
-  // Use previous metrics while loading
   const displayMetrics = metrics || previousMetrics.current;
 
   if (!displayMetrics && isLoading) {
     return (
       <div className="w-full text-sm h-[320px] flex flex-col">
         <div className="flex-grow">
-          {/* Skeleton loader matching final content structure */}
           <h3 className="text-sm font-semibold mb-2 bg-white py-2">
             <div className="h-4 bg-gray-200 rounded w-48 mb-2"></div>
             <div className="h-4 bg-gray-200 rounded w-56"></div>
@@ -475,12 +471,10 @@ function ScorePanel({
             </div>
           ))}
         </div>
-        <div className="h-12"></div> {/* Space for button */}
+        <div className="h-12"></div>
       </div>
     );
   }
-
-  // ... keep all the code before categories array ...
 
   const categories = [
     { key: 'overall_performance', label: 'Overall Performance' },
@@ -499,7 +493,7 @@ function ScorePanel({
         <div className="flex-grow overflow-y-auto scrollbar-thin">
           <h3 className="text-sm font-semibold mb-2 sticky top-0 bg-white py-2 z-10">
             <div className="mb-1">
-              {`${Math.max(0, performanceGoals.number_of_calls_average - (displayMetrics?.total_calls || 0))} calls left to complete the challenge.`}
+              {Math.max(0, performanceGoals.number_of_calls_average - (displayMetrics?.total_calls || 0))} calls left to complete the challenge.
             </div>
             <div>
               Your score from last {displayMetrics?.total_calls || 0} calls:
