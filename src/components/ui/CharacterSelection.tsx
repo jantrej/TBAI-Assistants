@@ -409,14 +409,15 @@ function ScorePanel({
       if (memberId && characterName) {
         fetchMetrics();
       }
-    }, 5000);
+    }, 2000); // Poll every 2 seconds
     return () => clearInterval(interval);
   }, [memberId, characterName, teamId, fetchMetrics]);
 
   useEffect(() => {
     const resetChallenge = async () => {
       try {
-        if (displayMetrics?.total_calls >= performanceGoals.number_of_calls_average) {
+        const currentCalls = displayMetrics?.total_calls || 0;
+        if (currentCalls >= performanceGoals.number_of_calls_average) {
           console.log('Challenge completed, resetting metrics...');
           const response = await fetch('/api/character-performance/reset', {
             method: 'POST',
@@ -478,6 +479,59 @@ function ScorePanel({
       </div>
     );
   }
+
+  const categories = [
+    { key: 'overall_performance', label: 'Overall Performance' },
+    { key: 'engagement', label: 'Engagement' },
+    { key: 'objection_handling', label: 'Objection Handling' },
+    { key: 'information_gathering', label: 'Information Gathering' },
+    { key: 'program_explanation', label: 'Program Explanation' },
+    { key: 'closing_skills', label: 'Closing Skills' },
+    { key: 'overall_effectiveness', label: 'Overall Effectiveness' },
+  ];
+
+  return (
+    <>
+      <style jsx>{scrollbarStyles}</style>
+      <div className="w-full text-sm h-[320px] flex flex-col">
+        <div className="flex-grow overflow-y-auto scrollbar-thin">
+          <h3 className="text-sm font-semibold mb-2 sticky top-0 bg-white py-2 z-10">
+            <div className="mb-1">
+              {Math.max(0, performanceGoals.number_of_calls_average - (displayMetrics?.total_calls || 0))} calls left to complete the challenge.
+            </div>
+            <div>
+              Your score from last {displayMetrics?.total_calls || 0} calls:
+            </div>
+          </h3>
+          {categories.map(({ key, label }) => (
+            <div key={key} className="bg-[#f8fdf6] p-3 rounded-lg mb-3 mr-2">
+              <div className="flex justify-between items-center mb-1">
+                <span className={`font-medium ${key === 'overall_performance' ? 'text-base' : 'text-xs'}`}>
+                  {label}
+                </span>
+                <span className={`font-bold text-green-500 ${key === 'overall_performance' ? 'text-lg' : 'text-xs'}`}>
+                  {(displayMetrics?.[key as keyof PerformanceMetrics] ?? 0)}/100
+                </span>
+              </div>
+              <div className={`bg-gray-200 rounded-full overflow-hidden ${key === 'overall_performance' ? 'h-3' : 'h-2'}`}>
+                <div 
+                  className="h-full bg-green-500 rounded-full transition-all duration-300"
+                  style={{ width: `${displayMetrics?.[key as keyof PerformanceMetrics] ?? 0}%` }}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+        <button 
+          onClick={handleRecordsClick}
+          className="w-full py-3 rounded-[20px] text-black font-semibold text-lg transition-all hover:opacity-90 hover:shadow-lg bg-white shadow-md mb-6"
+        >
+          Go to Call Records
+        </button>
+      </div>
+    </>
+  );
+}
 
   const categories = [
     { key: 'overall_performance', label: 'Overall Performance' },
