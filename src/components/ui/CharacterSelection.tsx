@@ -376,131 +376,6 @@ function ScorePanel({
   const [isLoading, setIsLoading] = useState(true);
   const previousMetrics = useRef<PerformanceMetrics | null>(null);
 
-  // Add this first
-  const fetchMetrics = useCallback(async () => {
-    try {
-      const response = await fetch(
-        `/api/character-performance?memberId=${memberId}&characterName=${characterName}`
-      );
-      
-      if (!response.ok) {
-        throw new Error(await response.text());
-      }
-      
-      const data = await response.json();
-      previousMetrics.current = metrics;
-      setMetrics(data);
-    } catch (error) {
-      console.error('Error fetching metrics:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [memberId, characterName, metrics]);
-
-  // Then add this
-  useEffect(() => {
-    if (memberId && characterName) {
-      fetchMetrics();
-    }
-  }, [memberId, characterName, teamId, fetchMetrics]);
-
-  // Then this
-  useEffect(() => {
-    const resetChallenge = async () => {
-      try {
-        if (displayMetrics?.total_calls >= performanceGoals.number_of_calls_average) {
-          console.log('Challenge completed, resetting metrics...');
-          const response = await fetch('/api/character-performance/reset', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              memberId,
-              characterName,
-              teamId
-            })
-          });
-
-          if (!response.ok) {
-            throw new Error('Failed to reset challenge');
-          }
-
-          await fetchMetrics();
-        }
-      } catch (error) {
-        console.error('Error resetting challenge:', error);
-      }
-    };
-
-    if (displayMetrics && performanceGoals) {
-      resetChallenge();
-    }
-  }, [displayMetrics?.total_calls, memberId, characterName, teamId, performanceGoals, fetchMetrics]);
-
-  // Add handleRecordsClick after all the hooks
-  const handleRecordsClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    window.top!.location.href = 'https://app.trainedbyai.com/call-records';
-  };
-      
-      if (!response.ok) {
-        throw new Error(await response.text());
-      }
-      
-      const data = await response.json();
-      previousMetrics.current = metrics;
-      setMetrics(data);
-    } catch (error) {
-      console.error('Error fetching metrics:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [memberId, characterName, metrics]);
-
-  useEffect(() => {
-    if (memberId && characterName) {
-      fetchMetrics();
-    }
-  }, [memberId, characterName, teamId, fetchMetrics]);
-
-  useEffect(() => {
-    const resetChallenge = async () => {
-      try {
-        if (displayMetrics?.total_calls >= performanceGoals.number_of_calls_average) {
-          console.log('Challenge completed, resetting metrics...');
-          const response = await fetch('/api/character-performance/reset', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              memberId,
-              characterName,
-              teamId
-            })
-          });
-
-          if (!response.ok) {
-            throw new Error('Failed to reset challenge');
-          }
-
-          await fetchMetrics();
-        }
-      } catch (error) {
-        console.error('Error resetting challenge:', error);
-      }
-    };
-
-    if (displayMetrics && performanceGoals) {
-      resetChallenge();
-    }
-  }, [displayMetrics?.total_calls, memberId, characterName, teamId, performanceGoals, fetchMetrics]);
-  const handleRecordsClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    window.top!.location.href = 'https://app.trainedbyai.com/call-records';
-  };
-  
   const fetchMetrics = useCallback(async () => {
     try {
       // Add random parameter to prevent caching
@@ -522,9 +397,9 @@ function ScorePanel({
     } finally {
       setIsLoading(false);
     }
-  }, [memberId, characterName, metrics]); // Added metrics as dependency
+  }, [memberId, characterName, metrics]);
 
-useEffect(() => {
+  useEffect(() => {
     // Initial fetch
     if (memberId && characterName) {
       fetchMetrics();
@@ -560,12 +435,22 @@ useEffect(() => {
           }
 
           // Refresh metrics after reset
-          fetchMetrics();
+          await fetchMetrics();
         }
       } catch (error) {
         console.error('Error resetting challenge:', error);
       }
     };
+
+    if (displayMetrics && performanceGoals) {
+      resetChallenge();
+    }
+  }, [displayMetrics?.total_calls, memberId, characterName, teamId, performanceGoals, fetchMetrics]);
+
+  const handleRecordsClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    window.top!.location.href = 'https://app.trainedbyai.com/call-records';
+  };
 
   // Use previous metrics while loading
   const displayMetrics = metrics || previousMetrics.current;
