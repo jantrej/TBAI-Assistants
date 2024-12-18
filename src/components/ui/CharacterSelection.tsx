@@ -375,15 +375,15 @@ function ScorePanel({
   const [metrics, setMetrics] = useState<PerformanceMetrics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const previousMetrics = useRef<PerformanceMetrics | null>(null);
-  const displayMetrics = metrics || previousMetrics.current;  // Moved this up
 
   const handleRecordsClick = (e: React.MouseEvent) => {
     e.preventDefault();
     window.top!.location.href = 'https://app.trainedbyai.com/call-records';
   };
-
+  
   const fetchMetrics = useCallback(async () => {
     try {
+      // Add random parameter to prevent caching
       const timestamp = new Date().getTime();
       const random = Math.random();
       const response = await fetch(
@@ -395,78 +395,37 @@ function ScorePanel({
       }
       
       const data = await response.json();
-      previousMetrics.current = metrics;
+      previousMetrics.current = metrics;  // Save current metrics before updating
       setMetrics(data);
     } catch (error) {
       console.error('Error fetching metrics:', error);
     } finally {
       setIsLoading(false);
     }
-  }, [memberId, characterName, metrics]);
+  }, [memberId, characterName, metrics]); // Added metrics as dependency
 
-  useEffect(() => {
+useEffect(() => {
+    // Initial fetch
     if (memberId && characterName) {
       fetchMetrics();
     }
-
+    // Set up polling
     const interval = setInterval(() => {
       if (memberId && characterName) {
         fetchMetrics();
       }
-    }, 2000);
-
+    }, 5000);
     return () => clearInterval(interval);
-  }, [memberId, characterName, fetchMetrics]);
+  }, [memberId, characterName, teamId, fetchMetrics]);
 
-  useEffect(() => {
-    const resetChallenge = async () => {
-      const currentCalls = displayMetrics?.total_calls || 0;
-      try {
-        if (currentCalls >= performanceGoals.number_of_calls_average) {
-          console.log('Challenge completed, resetting metrics...');
-          const response = await fetch('/api/character-performance/reset', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              memberId,
-              characterName,
-              teamId
-            })
-          });
-
-          if (!response.ok) {
-            throw new Error('Failed to reset challenge');
-          }
-
-          console.log('Reset successful, refreshing metrics...');
-          await fetchMetrics();
-        }
-      } catch (error) {
-        console.error('Error resetting challenge:', error);
-      }
-    };
-
-    if (displayMetrics && performanceGoals) {
-      resetChallenge();
-    }
-  }, [displayMetrics, performanceGoals, memberId, characterName, teamId, fetchMetrics]);
-
-  const categories = [
-    { key: 'overall_performance', label: 'Overall Performance' },
-    { key: 'engagement', label: 'Engagement' },
-    { key: 'objection_handling', label: 'Objection Handling' },
-    { key: 'information_gathering', label: 'Information Gathering' },
-    { key: 'program_explanation', label: 'Program Explanation' },
-    { key: 'closing_skills', label: 'Closing Skills' },
-    { key: 'overall_effectiveness', label: 'Overall Effectiveness' },
-  ];
+  // Use previous metrics while loading
+  const displayMetrics = metrics || previousMetrics.current;
 
   if (!displayMetrics && isLoading) {
     return (
       <div className="w-full text-sm h-[320px] flex flex-col">
         <div className="flex-grow">
+          {/* Skeleton loader matching final content structure */}
           <h3 className="text-sm font-semibold mb-2 bg-white py-2">
             <div className="h-4 bg-gray-200 rounded w-48 mb-2"></div>
             <div className="h-4 bg-gray-200 rounded w-56"></div>
@@ -481,10 +440,20 @@ function ScorePanel({
             </div>
           ))}
         </div>
-        <div className="h-12"></div>
+        <div className="h-12"></div> {/* Space for button */}
       </div>
     );
   }
+
+  const categories = [
+    { key: 'overall_performance', label: 'Overall Performance' },
+    { key: 'engagement', label: 'Engagement' },
+    { key: 'objection_handling', label: 'Objection Handling' },
+    { key: 'information_gathering', label: 'Information Gathering' },
+    { key: 'program_explanation', label: 'Program Explanation' },
+    { key: 'closing_skills', label: 'Closing Skills' },
+    { key: 'overall_effectiveness', label: 'Overall Effectiveness' },
+  ];
 
   return (
     <>
@@ -493,7 +462,10 @@ function ScorePanel({
         <div className="flex-grow overflow-y-auto scrollbar-thin">
           <h3 className="text-sm font-semibold mb-2 sticky top-0 bg-white py-2 z-10">
             <div className="mb-1">
-              {Math.max(0, performanceGoals.number_of_calls_average - (displayMetrics?.total_calls || 0))} calls left to complete the challenge.
+              {performanceGoals && displayMetrics ? 
+                `${Math.max(0, performanceGoals.number_of_calls_average - (displayMetrics.total_calls || 0))} calls left to complete the challenge.` :
+                'Loading...'
+              }
             </div>
             <div>
               Your score from last {displayMetrics?.total_calls || 0} calls:
