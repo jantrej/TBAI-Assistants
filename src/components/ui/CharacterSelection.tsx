@@ -376,14 +376,53 @@ function ScorePanel({
   const [isLoading, setIsLoading] = useState(true);
   const [challengeStatus, setChallengeStatus] = useState<'in_progress' | 'completed'>('in_progress');
   const previousMetrics = useRef<PerformanceMetrics | null>(null);
-  const displayMetrics = metrics || previousMetrics.current;
 
   const handleRecordsClick = (e: React.MouseEvent) => {
     e.preventDefault();
     window.top!.location.href = 'https://app.trainedbyai.com/call-records';
   };
 
+  const resetChallenge = useCallback(async () => {
+    try {
+      console.log('Resetting challenge...');
+      const response = await fetch('/api/reset-challenge', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          memberId,
+          characterName,
+          teamId
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to reset challenge');
+      }
+
+      // Set metrics to initial state immediately
+      setMetrics({
+        overall_performance: 0,
+        engagement: 0,
+        objection_handling: 0,
+        information_gathering: 0,
+        program_explanation: 0,
+        closing_skills: 0,
+        overall_effectiveness: 0,
+        total_calls: 0
+      });
+
+      // Refetch metrics to ensure sync with server
+      await fetchMetrics();
+    } catch (error) {
+      console.error('Error resetting challenge:', error);
+    }
+  }, [memberId, characterName, teamId]);
+
   const fetchMetrics = useCallback(async () => {
+    if (!memberId || !characterName) return;
+
     try {
       const timestamp = new Date().getTime();
       const random = Math.random();
@@ -396,73 +435,34 @@ function ScorePanel({
       }
       
       const data = await response.json();
-      previousMetrics.current = metrics;
       
-      // Check if challenge is completed successfully
-      if (data.total_calls >= performanceGoals.number_of_calls_average && 
-          data.overall_performance >= performanceGoals.overall_performance_goal) {
-        setChallengeStatus('completed');
+      // Check if challenge is completed or needs reset
+      if (data.total_calls >= performanceGoals.number_of_calls_average) {
+        if (data.overall_performance >= performanceGoals.overall_performance_goal) {
+          // Challenge completed successfully
+          setChallengeStatus('completed');
+          setMetrics(data);
+        } else {
+          // Challenge failed - reset immediately
+          await resetChallenge();
+        }
+      } else {
+        // Still in progress
+        setMetrics(data);
       }
-      
-      setMetrics(data);
     } catch (error) {
       console.error('Error fetching metrics:', error);
     } finally {
       setIsLoading(false);
     }
-  }, [memberId, characterName, metrics, performanceGoals]);
+  }, [memberId, characterName, performanceGoals, resetChallenge]);
 
   useEffect(() => {
-    if (memberId && characterName) {
-      fetchMetrics();
-    }
+    fetchMetrics();
 
-    const interval = setInterval(() => {
-      if (memberId && characterName) {
-        fetchMetrics();
-      }
-    }, 2000);
-
+    const interval = setInterval(fetchMetrics, 2000);
     return () => clearInterval(interval);
-  }, [memberId, characterName, fetchMetrics]);
-
-  // Reset challenge if not achieved
-  useEffect(() => {
-    const checkAndResetChallenge = async () => {
-      if (!displayMetrics || challengeStatus === 'completed') return;
-
-      const currentCalls = displayMetrics.total_calls;
-      const isAchieved = displayMetrics.overall_performance >= performanceGoals.overall_performance_goal;
-
-      if (currentCalls >= performanceGoals.number_of_calls_average && !isAchieved) {
-        console.log('Challenge not achieved, resetting metrics...');
-        try {
-          const response = await fetch('/api/reset-challenge', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              memberId,
-              characterName,
-              teamId
-            })
-          });
-
-          if (!response.ok) {
-            throw new Error('Failed to reset challenge');
-          }
-
-          // Fetch fresh metrics after reset
-          await fetchMetrics();
-        } catch (error) {
-          console.error('Error resetting challenge:', error);
-        }
-      }
-    };
-
-    checkAndResetChallenge();
-  }, [displayMetrics, performanceGoals, memberId, characterName, teamId, fetchMetrics, challengeStatus]);
+  }, [fetchMetrics]);
 
   const categories = [
     { key: 'overall_performance', label: 'Overall Performance' },
@@ -474,7 +474,7 @@ function ScorePanel({
     { key: 'overall_effectiveness', label: 'Overall Effectiveness' },
   ];
 
-  if (!displayMetrics && isLoading) {
+  if (!metrics && isLoading) {
     return (
       <div className="w-full text-sm h-[320px] flex flex-col">
         <div className="flex-grow">
@@ -497,7 +497,7 @@ function ScorePanel({
     );
   }
 
-  const totalCalls = displayMetrics?.total_calls || 0;
+  const totalCalls = metrics?.total_calls || 0;
   const callsLeft = performanceGoals.number_of_calls_average - totalCalls;
 
   return (
@@ -524,13 +524,13 @@ function ScorePanel({
                   {label}
                 </span>
                 <span className={`font-bold text-green-500 ${key === 'overall_performance' ? 'text-lg' : 'text-xs'}`}>
-                  {(displayMetrics?.[key as keyof PerformanceMetrics] ?? 0)}/100
+                  {(metrics?.[key as keyof PerformanceMetrics] ?? 0)}/100
                 </span>
               </div>
               <div className={`bg-gray-200 rounded-full overflow-hidden ${key === 'overall_performance' ? 'h-3' : 'h-2'}`}>
                 <div 
                   className="h-full bg-green-500 rounded-full transition-all duration-300"
-                  style={{ width: `${displayMetrics?.[key as keyof PerformanceMetrics] ?? 0}%` }}
+                  style={{ width: `${metrics?.[key as keyof PerformanceMetrics] ?? 0}%` }}
                 />
               </div>
             </div>
