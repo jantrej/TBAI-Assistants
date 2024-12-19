@@ -374,10 +374,10 @@ function ScorePanel({
 }) {
   const [metrics, setMetrics] = useState<PerformanceMetrics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [challengeStatus, setChallengeStatus] = useState<'in_progress' | 'completed'>('in_progress');
+  const [isCompleted, setIsCompleted] = useState(false);
   const completionChecked = useRef(false);
 
-  // Check initial completion status
+  // Check initial completion status once
   useEffect(() => {
     const checkInitialCompletion = async () => {
       if (completionChecked.current || !memberId || !characterName) return;
@@ -388,9 +388,9 @@ function ScorePanel({
         );
         
         if (response.ok) {
-          const { isCompleted } = await response.json();
-          if (isCompleted) {
-            setChallengeStatus('completed');
+          const { isCompleted: wasCompleted } = await response.json();
+          if (wasCompleted) {
+            setIsCompleted(true);
           }
         }
       } catch (error) {
@@ -409,7 +409,7 @@ function ScorePanel({
   };
 
   const resetChallenge = useCallback(async () => {
-    if (challengeStatus === 'completed') return; // Don't reset if already completed
+    if (isCompleted) return; // Never reset if completed
 
     try {
       console.log('Resetting challenge...');
@@ -442,7 +442,7 @@ function ScorePanel({
     } catch (error) {
       console.error('Error resetting challenge:', error);
     }
-  }, [memberId, characterName, teamId, challengeStatus]);
+  }, [memberId, characterName, teamId, isCompleted]);
 
   const markChallengeComplete = useCallback(async () => {
     try {
@@ -457,6 +457,7 @@ function ScorePanel({
           teamId
         })
       });
+      setIsCompleted(true);
     } catch (error) {
       console.error('Error marking challenge complete:', error);
     }
@@ -478,25 +479,21 @@ function ScorePanel({
       
       const data = await response.json();
       
-      // If challenge is already completed, just update the metrics
-      if (challengeStatus === 'completed') {
+      if (isCompleted) {
+        // If already completed, just update metrics without any checks
         setMetrics(data);
         return;
       }
 
-      // Check for new completion
+      // Only check completion for non-completed challenges
       if (data.total_calls >= performanceGoals.number_of_calls_average) {
         if (data.overall_performance >= performanceGoals.overall_performance_goal) {
-          // Challenge newly completed
-          setChallengeStatus('completed');
-          setMetrics(data);
           await markChallengeComplete();
+          setMetrics(data);
         } else {
-          // Challenge failed - reset immediately
           await resetChallenge();
         }
       } else {
-        // Still in progress
         setMetrics(data);
       }
     } catch (error) {
@@ -504,11 +501,10 @@ function ScorePanel({
     } finally {
       setIsLoading(false);
     }
-  }, [memberId, characterName, performanceGoals, resetChallenge, markChallengeComplete, challengeStatus]);
+  }, [memberId, characterName, performanceGoals, resetChallenge, markChallengeComplete, isCompleted]);
 
   useEffect(() => {
     fetchMetrics();
-    // Always keep fetching metrics to update stats, even when completed
     const interval = setInterval(fetchMetrics, 2000);
     return () => clearInterval(interval);
   }, [fetchMetrics]);
@@ -547,7 +543,6 @@ function ScorePanel({
   }
 
   const totalCalls = metrics?.total_calls || 0;
-  const callsLeft = performanceGoals.number_of_calls_average - totalCalls;
 
   return (
     <>
@@ -556,10 +551,12 @@ function ScorePanel({
         <div className="flex-grow overflow-y-auto scrollbar-thin">
           <h3 className="text-sm font-semibold mb-2 sticky top-0 bg-white py-2 z-10">
             <div className="mb-1">
-              {challengeStatus === 'completed' ? (
+              {isCompleted ? (
                 "The challenge has been completed. ✅"
               ) : (
-                `${callsLeft} ${callsLeft === 1 ? 'call' : 'calls'} left to complete the challenge.`
+                `${performanceGoals.number_of_calls_average - totalCalls} ${
+                  performanceGoals.number_of_calls_average - totalCalls === 1 ? 'call' : 'calls'
+                } left to complete the challenge.`
               )}
             </div>
             <div>
