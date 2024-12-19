@@ -383,7 +383,41 @@ function ScorePanel({
   const [metrics, setMetrics] = useState<PerformanceMetrics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isCompleted, setIsCompleted] = useState(false);
-  const completionChecked = useRef(false);
+  const didInitialCheck = useRef(false);
+  const previousGoals = useRef(performanceGoals);
+
+  // Check initial completion status
+  useEffect(() => {
+    const checkCompletion = async () => {
+      if (didInitialCheck.current || !memberId || !characterName) return;
+      
+      try {
+        const response = await fetch(
+          `/api/challenge-completion?memberId=${memberId}&characterName=${characterName}`
+        );
+        
+        if (response.ok) {
+          const { isCompleted: wasCompleted } = await response.json();
+          setIsCompleted(wasCompleted);
+          didInitialCheck.current = true;
+        }
+      } catch (error) {
+        console.error('Error checking completion status:', error);
+      }
+    };
+
+    checkCompletion();
+  }, [memberId, characterName]);
+
+  // Handle performance goals changes
+  useEffect(() => {
+    if (!isCompleted && 
+        (previousGoals.current.overall_performance_goal !== performanceGoals.overall_performance_goal ||
+         previousGoals.current.number_of_calls_average !== performanceGoals.number_of_calls_average)) {
+      resetChallenge();
+    }
+    previousGoals.current = performanceGoals;
+  }, [performanceGoals, isCompleted]);
 
   const handleRecordsClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -394,7 +428,6 @@ function ScorePanel({
     if (isCompleted) return; // Never reset if completed
 
     try {
-      console.log('Resetting challenge...');
       const response = await fetch('/api/reset-challenge', {
         method: 'POST',
         headers: {
@@ -428,7 +461,7 @@ function ScorePanel({
 
   const markChallengeComplete = useCallback(async () => {
     try {
-      await fetch('/api/mark-challenge-complete', {
+      const response = await fetch('/api/mark-challenge-complete', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -436,33 +469,25 @@ function ScorePanel({
         body: JSON.stringify({
           memberId,
           characterName,
-          teamId
+          teamId,
+          performanceGoals // Store the goals that were used to complete the challenge
         })
       });
+
+      if (!response.ok) {
+        throw new Error('Failed to mark challenge as complete');
+      }
+
       setIsCompleted(true);
     } catch (error) {
       console.error('Error marking challenge complete:', error);
     }
-  }, [memberId, characterName, teamId]);
+  }, [memberId, characterName, teamId, performanceGoals]);
 
   const fetchMetrics = useCallback(async () => {
     if (!memberId || !characterName) return;
 
     try {
-      // Check completion status first
-      const completionResponse = await fetch(
-        `/api/challenge-completion?memberId=${memberId}&characterName=${characterName}`
-      );
-      
-      if (completionResponse.ok) {
-        const { isCompleted: wasCompleted } = await completionResponse.json();
-        // If it was ever completed, set it as completed
-        if (wasCompleted) {
-          setIsCompleted(true);
-        }
-      }
-
-      // Get the metrics
       const timestamp = new Date().getTime();
       const random = Math.random();
       const response = await fetch(
@@ -475,13 +500,13 @@ function ScorePanel({
       
       const data = await response.json();
       
-      // If challenge was ever completed, just update metrics and ignore goals
       if (isCompleted) {
+        // If already completed, just update the metrics
         setMetrics(data);
         return;
       }
 
-      // Only proceed with goal checks if never completed
+      // Check for completion only if not already completed
       if (data.total_calls >= performanceGoals.number_of_calls_average) {
         if (data.overall_performance >= performanceGoals.overall_performance_goal) {
           await markChallengeComplete();
@@ -586,83 +611,6 @@ function ScorePanel({
         </button>
       </div>
     </>
-  );
-}
-
-function LockedOverlay({ 
-  previousAssistant, 
-  isLastLocked, 
-  difficulty,
-  performanceGoals,
-  showUnlockAnimation,
-  onAnimationComplete,
-  characterName
-}: { 
-  previousAssistant: string; 
-  isLastLocked: boolean; 
-  difficulty: string;
-  performanceGoals: {
-    overall_performance_goal: number;
-    number_of_calls_average: number;
-  };
-  showUnlockAnimation?: boolean;
-  onAnimationComplete?: () => void;
-  characterName: string;
-}) {
-  const glowColor = 
-    difficulty === 'Easy' 
-      ? 'rgba(72, 199, 174, 0.5)' 
-      : difficulty === 'Intermediate'
-        ? 'rgba(252, 161, 71, 0.5)'
-        : 'rgba(220, 38, 38, 0.5)';
-
-  useEffect(() => {
-    if (showUnlockAnimation) {
-      const timeout = setTimeout(() => {
-        if (onAnimationComplete) {
-          onAnimationComplete();
-        }
-      }, 3000); // Match this with your animation duration
-
-      return () => clearTimeout(timeout);
-    }
-  }, [showUnlockAnimation, onAnimationComplete]);
-
-  return (
-    <div 
-      className="absolute inset-0 rounded-[15px] flex items-center justify-center bg-black/40 backdrop-blur-sm" 
-      style={{ 
-        boxShadow: `0 0 20px ${glowColor}`
-      }}
-    >
-      <div className="w-[400px] h-[400px] p-6 pt-16 text-center flex flex-col items-center justify-start">
-        <div>
-          <div className="flex justify-center items-center gap-4 mb-8 w-full">
-            <AnimatedLock 
-              characterName={previousAssistant}
-              isLocked={!showUnlockAnimation}
-              onUnlockShown={onAnimationComplete}
-            />
-          </div>
-          <h3 className="text-3xl font-bold text-white mb-4">Character Locked</h3>
-          <p className="text-white text-xl mb-8">
-            {`Achieve Overall Performance above ${performanceGoals.overall_performance_goal} from the past ${performanceGoals.number_of_calls_average} calls on ${previousAssistant} to Unlock.`}
-          </p>
-          <div className="w-full">
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-sm font-medium text-white">Overall Performance</span>
-              <span className="text-sm font-bold text-white">{performanceGoals.overall_performance_goal}/100</span>
-            </div>
-            <div className="h-3 bg-white/20 rounded-full overflow-hidden relative">
-              <div 
-                className="h-full bg-gradient-to-r from-white to-gray-200 rounded-full transition-all duration-1000 ease-out"
-                style={{ width: `${performanceGoals.overall_performance_goal}%` }}
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
   );
 }
 
