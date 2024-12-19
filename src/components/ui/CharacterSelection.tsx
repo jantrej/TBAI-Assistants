@@ -494,12 +494,33 @@ function ScorePanel({
     { key: 'overall_effectiveness', label: 'Overall Effectiveness' },
   ];
 
+  // Previous code remains the same until the loading state check...
+
   if (!displayMetrics && isLoading) {
-    // Loading state JSX remains the same
-    return (/* existing loading state JSX */);
+    return (
+      <div className="w-full text-sm h-[320px] flex flex-col">
+        <div className="flex-grow">
+          <h3 className="text-sm font-semibold mb-2 bg-white py-2">
+            <div className="h-4 bg-gray-200 rounded w-48 mb-2"></div>
+            <div className="h-4 bg-gray-200 rounded w-56"></div>
+          </h3>
+          {[...Array(7)].map((_, i) => (
+            <div key={i} className="bg-[#f8fdf6] p-3 rounded-lg mb-3 mr-2">
+              <div className="animate-pulse flex justify-between items-center mb-1">
+                <div className="h-4 bg-gray-200 rounded w-24"></div>
+                <div className="h-4 bg-gray-200 rounded w-12"></div>
+              </div>
+              <div className="h-2 bg-gray-200 rounded-full w-full"></div>
+            </div>
+          ))}
+        </div>
+        <div className="h-12"></div>
+      </div>
+    );
   }
 
   return (
+    // Rest of the component remains the same...
     <>
       <style jsx>{scrollbarStyles}</style>
       <div className="w-full text-sm h-[320px] flex flex-col">
