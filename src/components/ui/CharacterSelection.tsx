@@ -382,12 +382,10 @@ function ScorePanel({
 }) {
   const [metrics, setMetrics] = useState<PerformanceMetrics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [completionState, setCompletionState] = useState<CompletionState>({
-    isCompleted: false
-  });
+  const [isCompleted, setIsCompleted] = useState(false);
   const completionChecked = useRef(false);
 
-  // Check initial completion status once
+  // Check initial completion status
   useEffect(() => {
     const checkInitialCompletion = async () => {
       if (completionChecked.current || !memberId || !characterName) return;
@@ -398,12 +396,9 @@ function ScorePanel({
         );
         
         if (response.ok) {
-          const { isCompleted, originalGoals } = await response.json();
-          if (isCompleted) {
-            setCompletionState({
-              isCompleted: true,
-              originalGoals: originalGoals || performanceGoals
-            });
+          const { isCompleted: wasCompleted } = await response.json();
+          if (wasCompleted) {
+            setIsCompleted(true);
           }
         }
       } catch (error) {
@@ -414,35 +409,18 @@ function ScorePanel({
     };
 
     checkInitialCompletion();
-  }, [memberId, characterName, performanceGoals]);
+  }, [memberId, characterName]);
 
-  const markChallengeComplete = useCallback(async () => {
-    try {
-      await fetch('/api/mark-challenge-complete', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          memberId,
-          characterName,
-          teamId,
-          goals: performanceGoals // Store the goals when challenge is completed
-        })
-      });
-      setCompletionState({
-        isCompleted: true,
-        originalGoals: performanceGoals
-      });
-    } catch (error) {
-      console.error('Error marking challenge complete:', error);
-    }
-  }, [memberId, characterName, teamId, performanceGoals]);
+  const handleRecordsClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    window.top!.location.href = 'https://app.trainedbyai.com/call-records';
+  };
 
   const resetChallenge = useCallback(async () => {
-    if (completionState.isCompleted) return; // Never reset if completed
+    if (isCompleted) return; // Never reset if completed
 
     try {
+      console.log('Resetting challenge...');
       const response = await fetch('/api/reset-challenge', {
         method: 'POST',
         headers: {
@@ -472,7 +450,26 @@ function ScorePanel({
     } catch (error) {
       console.error('Error resetting challenge:', error);
     }
-  }, [memberId, characterName, teamId, completionState.isCompleted]);
+  }, [memberId, characterName, teamId, isCompleted]);
+
+  const markChallengeComplete = useCallback(async () => {
+    try {
+      await fetch('/api/mark-challenge-complete', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          memberId,
+          characterName,
+          teamId
+        })
+      });
+      setIsCompleted(true);
+    } catch (error) {
+      console.error('Error marking challenge complete:', error);
+    }
+  }, [memberId, characterName, teamId]);
 
   const fetchMetrics = useCallback(async () => {
     if (!memberId || !characterName) return;
@@ -490,8 +487,8 @@ function ScorePanel({
       
       const data = await response.json();
       
-      if (completionState.isCompleted) {
-        // If already completed, just update metrics without any checks
+      // If already completed, just update metrics
+      if (isCompleted) {
         setMetrics(data);
         return;
       }
@@ -499,8 +496,8 @@ function ScorePanel({
       // Only check completion for non-completed challenges
       if (data.total_calls >= performanceGoals.number_of_calls_average) {
         if (data.overall_performance >= performanceGoals.overall_performance_goal) {
-          await markChallengeComplete();
           setMetrics(data);
+          await markChallengeComplete();
         } else {
           await resetChallenge();
         }
@@ -512,7 +509,7 @@ function ScorePanel({
     } finally {
       setIsLoading(false);
     }
-  }, [memberId, characterName, performanceGoals, resetChallenge, markChallengeComplete, completionState.isCompleted]);
+  }, [memberId, characterName, performanceGoals, resetChallenge, markChallengeComplete, isCompleted]);
 
   useEffect(() => {
     fetchMetrics();
@@ -520,7 +517,40 @@ function ScorePanel({
     return () => clearInterval(interval);
   }, [fetchMetrics]);
 
-  // ... rest of the component remains the same until the return statement
+  const categories = [
+    { key: 'overall_performance', label: 'Overall Performance' },
+    { key: 'engagement', label: 'Engagement' },
+    { key: 'objection_handling', label: 'Objection Handling' },
+    { key: 'information_gathering', label: 'Information Gathering' },
+    { key: 'program_explanation', label: 'Program Explanation' },
+    { key: 'closing_skills', label: 'Closing Skills' },
+    { key: 'overall_effectiveness', label: 'Overall Effectiveness' },
+  ];
+
+  if (!metrics && isLoading) {
+    return (
+      <div className="w-full text-sm h-[320px] flex flex-col">
+        <div className="flex-grow">
+          <h3 className="text-sm font-semibold mb-2 bg-white py-2">
+            <div className="h-4 bg-gray-200 rounded w-48 mb-2"></div>
+            <div className="h-4 bg-gray-200 rounded w-56"></div>
+          </h3>
+          {[...Array(7)].map((_, i) => (
+            <div key={i} className="bg-[#f8fdf6] p-3 rounded-lg mb-3 mr-2">
+              <div className="animate-pulse flex justify-between items-center mb-1">
+                <div className="h-4 bg-gray-200 rounded w-24"></div>
+                <div className="h-4 bg-gray-200 rounded w-12"></div>
+              </div>
+              <div className="h-2 bg-gray-200 rounded-full w-full"></div>
+            </div>
+          ))}
+        </div>
+        <div className="h-12"></div>
+      </div>
+    );
+  }
+
+  const totalCalls = metrics?.total_calls || 0;
 
   return (
     <>
@@ -529,19 +559,18 @@ function ScorePanel({
         <div className="flex-grow overflow-y-auto scrollbar-thin">
           <h3 className="text-sm font-semibold mb-2 sticky top-0 bg-white py-2 z-10">
             <div className="mb-1">
-              {completionState.isCompleted ? (
+              {isCompleted ? (
                 "The challenge has been completed. ✅"
               ) : (
-                `${performanceGoals.number_of_calls_average - (metrics?.total_calls || 0)} ${
-                  performanceGoals.number_of_calls_average - (metrics?.total_calls || 0) === 1 ? 'call' : 'calls'
+                `${performanceGoals.number_of_calls_average - totalCalls} ${
+                  performanceGoals.number_of_calls_average - totalCalls === 1 ? 'call' : 'calls'
                 } left to complete the challenge.`
               )}
             </div>
             <div>
-              Your score from last {metrics?.total_calls || 0} {(metrics?.total_calls || 0) === 1 ? 'call' : 'calls'}:
+              Your score from last {totalCalls} {totalCalls === 1 ? 'call' : 'calls'}:
             </div>
           </h3>
-          {/* Categories rendering remains the same */}
           {categories.map(({ key, label }) => (
             <div key={key} className="bg-[#f8fdf6] p-3 rounded-lg mb-3 mr-2">
               <div className="flex justify-between items-center mb-1">
