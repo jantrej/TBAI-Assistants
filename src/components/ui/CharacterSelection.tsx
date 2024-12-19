@@ -883,11 +883,11 @@ return (
         const prevCharacterState = prevCharacter ? characterStates[prevCharacter.name] : null;
 
         let shouldBeUnlocked = index === 0;
-if (index > 0 && prevCharacterState && prevCharacterState.metrics && performanceGoals) {
-  const meetsPerformance = prevCharacterState.metrics.overall_performance >= performanceGoals.overall_performance_goal;
-  const meetsCalls = prevCharacterState.metrics.total_calls === performanceGoals.number_of_calls_average;
-  shouldBeUnlocked = meetsPerformance && meetsCalls;
-}
+        if (index > 0 && prevCharacterState && prevCharacterState.metrics && performanceGoals) {
+          const meetsPerformance = prevCharacterState.metrics.overall_performance >= performanceGoals.overall_performance_goal;
+          const meetsCalls = prevCharacterState.metrics.total_calls >= performanceGoals.number_of_calls_average;
+          shouldBeUnlocked = meetsPerformance && meetsCalls;
+        }
 
         if (shouldBeUnlocked && characterState?.isLocked && !characterState.animationShown) {
           unlockCharacter(character.name);
