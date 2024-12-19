@@ -374,9 +374,9 @@ function ScorePanel({
 }) {
   const [metrics, setMetrics] = useState<PerformanceMetrics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [challengeStatus, setChallengeStatus] = useState<'in_progress' | 'completed' | 'failed'>('in_progress');
   const previousMetrics = useRef<PerformanceMetrics | null>(null);
   const displayMetrics = metrics || previousMetrics.current;
-  const [isChallengeCompleted, setIsChallengeCompleted] = useState(false);
 
   const handleRecordsClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -398,22 +398,42 @@ function ScorePanel({
       const data = await response.json();
       previousMetrics.current = metrics;
       setMetrics(data);
+
+      // Update challenge status
+      if (data.total_calls >= performanceGoals.number_of_calls_average) {
+        const isAchieved = data.overall_performance >= performanceGoals.overall_performance_goal;
+        setChallengeStatus(isAchieved ? 'completed' : 'failed');
+      } else {
+        setChallengeStatus('in_progress');
+      }
     } catch (error) {
       console.error('Error fetching metrics:', error);
     } finally {
       setIsLoading(false);
     }
-  }, [memberId, characterName, metrics]);
+  }, [memberId, characterName, metrics, performanceGoals]);
 
-  const resetChallenge = useCallback(async () => {
-    const currentCalls = displayMetrics?.total_calls || 0;
-    const currentPerformance = displayMetrics?.overall_performance || 0;
+  useEffect(() => {
+    if (memberId && characterName) {
+      fetchMetrics();
+    }
 
-    if (currentCalls === performanceGoals.number_of_calls_average) {
-      const isChallengeAchieved = currentPerformance >= performanceGoals.overall_performance_goal;
+    const interval = setInterval(() => {
+      if (memberId && characterName) {
+        fetchMetrics();
+      }
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, [memberId, characterName, fetchMetrics]);
+
+  useEffect(() => {
+    const resetChallenge = async () => {
+      const currentCalls = displayMetrics?.total_calls || 0;
+      const isAchieved = (displayMetrics?.overall_performance || 0) >= performanceGoals.overall_performance_goal;
       
-      if (!isChallengeAchieved) {
-        try {
+      try {
+        if (currentCalls >= performanceGoals.number_of_calls_average && !isAchieved) {
           console.log('Challenge failed, resetting metrics...');
           const response = await fetch('/api/character-performance/reset', {
             method: 'POST',
@@ -433,56 +453,17 @@ function ScorePanel({
 
           console.log('Reset successful, refreshing metrics...');
           await fetchMetrics();
-        } catch (error) {
-          console.error('Error resetting challenge:', error);
+          setChallengeStatus('in_progress');
         }
-      } else {
-        setIsChallengeCompleted(true);
+      } catch (error) {
+        console.error('Error resetting challenge:', error);
       }
-    }
-  }, [displayMetrics, performanceGoals, memberId, characterName, teamId, fetchMetrics]);
+    };
 
-  useEffect(() => {
-    if (memberId && characterName) {
-      fetchMetrics();
-    }
-
-    const interval = setInterval(() => {
-      if (memberId && characterName) {
-        fetchMetrics();
-      }
-    }, 2000);
-
-    return () => clearInterval(interval);
-  }, [memberId, characterName, fetchMetrics]);
-
-  useEffect(() => {
     if (displayMetrics && performanceGoals) {
       resetChallenge();
     }
-  }, [displayMetrics, performanceGoals, resetChallenge]);
-
-  const getCallsText = () => {
-    const totalCalls = displayMetrics?.total_calls || 0;
-    
-    if (isChallengeCompleted) {
-      return "The challenge has been completed.";
-    }
-    
-    const remainingCalls = Math.max(0, performanceGoals.number_of_calls_average - totalCalls);
-    return `${remainingCalls} calls left to complete the challenge.`;
-  };
-
-  const getScoreText = () => {
-    const totalCalls = displayMetrics?.total_calls || 0;
-    const callWord = totalCalls === 1 ? 'call' : 'calls';
-    
-    if (isChallengeCompleted) {
-      return `Your score from last ${performanceGoals.number_of_calls_average} calls:`;
-    }
-    
-    return `Your score from last ${totalCalls} ${callWord}:`;
-  };
+  }, [displayMetrics, performanceGoals, memberId, characterName, teamId, fetchMetrics]);
 
   const categories = [
     { key: 'overall_performance', label: 'Overall Performance' },
@@ -493,8 +474,6 @@ function ScorePanel({
     { key: 'closing_skills', label: 'Closing Skills' },
     { key: 'overall_effectiveness', label: 'Overall Effectiveness' },
   ];
-
-  // Previous code remains the same until the loading state check...
 
   if (!displayMetrics && isLoading) {
     return (
@@ -519,18 +498,24 @@ function ScorePanel({
     );
   }
 
+  const callsLeft = Math.max(0, performanceGoals.number_of_calls_average - (displayMetrics?.total_calls || 0));
+  const totalCalls = displayMetrics?.total_calls || 0;
+
   return (
-    // Rest of the component remains the same...
     <>
       <style jsx>{scrollbarStyles}</style>
       <div className="w-full text-sm h-[320px] flex flex-col">
         <div className="flex-grow overflow-y-auto scrollbar-thin">
           <h3 className="text-sm font-semibold mb-2 sticky top-0 bg-white py-2 z-10">
             <div className="mb-1">
-              {getCallsText()}
+              {challengeStatus === 'completed' ? (
+                "The challenge has been completed. ✅"
+              ) : (
+                `${callsLeft} calls left to complete the challenge.`
+              )}
             </div>
             <div>
-              {getScoreText()}
+              Your score from last {totalCalls} {totalCalls === 1 ? 'call' : 'calls'}:
             </div>
           </h3>
           {categories.map(({ key, label }) => (
