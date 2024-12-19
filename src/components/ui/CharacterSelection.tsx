@@ -417,10 +417,10 @@ function ScorePanel({
   };
 
   const resetChallenge = useCallback(async () => {
-    if (isCompleted) return; // Never reset if completed
+    // Never reset if the challenge is completed
+    if (isCompleted) return;
 
     try {
-      console.log('Resetting challenge...');
       const response = await fetch('/api/reset-challenge', {
         method: 'POST',
         headers: {
@@ -487,21 +487,24 @@ function ScorePanel({
       
       const data = await response.json();
       
-      // If already completed, just update metrics
+      // If challenge is already completed, just update the metrics without any checks
       if (isCompleted) {
         setMetrics(data);
         return;
       }
 
-      // Only check completion for non-completed challenges
+      // Only check completion and handle resets for non-completed challenges
       if (data.total_calls >= performanceGoals.number_of_calls_average) {
         if (data.overall_performance >= performanceGoals.overall_performance_goal) {
-          setMetrics(data);
+          // Challenge newly completed
           await markChallengeComplete();
+          setMetrics(data);
         } else {
+          // Challenge failed - reset only if not completed
           await resetChallenge();
         }
       } else {
+        // Still in progress
         setMetrics(data);
       }
     } catch (error) {
