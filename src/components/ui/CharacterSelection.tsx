@@ -383,12 +383,11 @@ function ScorePanel({
   const [metrics, setMetrics] = useState<PerformanceMetrics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isCompleted, setIsCompleted] = useState(false);
-  const completionChecked = useRef(false);
 
-  // Check initial completion status
+  // First thing: Check if challenge is already completed
   useEffect(() => {
-    const checkInitialCompletion = async () => {
-      if (completionChecked.current || !memberId || !characterName) return;
+    const checkCompletion = async () => {
+      if (!memberId || !characterName) return;
 
       try {
         const response = await fetch(
@@ -397,45 +396,75 @@ function ScorePanel({
         
         if (response.ok) {
           const { isCompleted: wasCompleted } = await response.json();
-          if (wasCompleted) {
-            setIsCompleted(true);
-          }
+          setIsCompleted(wasCompleted);
         }
       } catch (error) {
         console.error('Error checking completion status:', error);
-      } finally {
-        completionChecked.current = true;
       }
     };
 
-    checkInitialCompletion();
+    checkCompletion();
   }, [memberId, characterName]);
 
-  const handleRecordsClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    window.top!.location.href = 'https://app.trainedbyai.com/call-records';
-  };
-
-  const resetChallenge = useCallback(async () => {
-    // Never reset if the challenge is completed
-    if (isCompleted) return;
+  // Only fetch metrics, no completion logic here
+  const fetchMetrics = useCallback(async () => {
+    if (!memberId || !characterName) return;
 
     try {
-      const response = await fetch('/api/reset-challenge', {
+      const response = await fetch(
+        `/api/character-performance?memberId=${memberId}&characterName=${characterName}&t=${Date.now()}`
+      );
+      
+      if (!response.ok) throw new Error('Failed to fetch metrics');
+      
+      const data = await response.json();
+      setMetrics(data);
+      
+      // If not completed yet, check for completion
+      if (!isCompleted && 
+          data.total_calls >= performanceGoals.number_of_calls_average && 
+          data.overall_performance >= performanceGoals.overall_performance_goal) {
+        await markChallengeComplete();
+      }
+    } catch (error) {
+      console.error('Error fetching metrics:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [memberId, characterName, performanceGoals, isCompleted]);
+
+  // Separate completion marking
+  const markChallengeComplete = async () => {
+    try {
+      const response = await fetch('/api/mark-challenge-complete', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           memberId,
           characterName,
-          teamId
+          teamId,
+          completedWith: performanceGoals // Store the goals it was completed with
         })
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to reset challenge');
+      if (response.ok) {
+        setIsCompleted(true);
       }
+    } catch (error) {
+      console.error('Error marking challenge complete:', error);
+    }
+  };
+
+  // Reset only if not completed
+  const resetChallenge = useCallback(async () => {
+    if (isCompleted) return; // Never reset if completed
+
+    try {
+      await fetch('/api/reset-challenge', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ memberId, characterName, teamId })
+      });
 
       setMetrics({
         overall_performance: 0,
@@ -452,68 +481,16 @@ function ScorePanel({
     }
   }, [memberId, characterName, teamId, isCompleted]);
 
-  const markChallengeComplete = useCallback(async () => {
-    try {
-      await fetch('/api/mark-challenge-complete', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          memberId,
-          characterName,
-          teamId
-        })
-      });
-      setIsCompleted(true);
-    } catch (error) {
-      console.error('Error marking challenge complete:', error);
+  // Check for reset only if not completed
+  useEffect(() => {
+    if (!isCompleted && metrics && 
+        metrics.total_calls >= performanceGoals.number_of_calls_average && 
+        metrics.overall_performance < performanceGoals.overall_performance_goal) {
+      resetChallenge();
     }
-  }, [memberId, characterName, teamId]);
+  }, [metrics, performanceGoals, isCompleted, resetChallenge]);
 
-  const fetchMetrics = useCallback(async () => {
-    if (!memberId || !characterName) return;
-
-    try {
-      const timestamp = new Date().getTime();
-      const random = Math.random();
-      const response = await fetch(
-        `/api/character-performance?memberId=${memberId}&characterName=${characterName}&t=${timestamp}&r=${random}`
-      );
-      
-      if (!response.ok) {
-        throw new Error(await response.text());
-      }
-      
-      const data = await response.json();
-      
-      // If challenge is already completed, just update the metrics without any checks
-      if (isCompleted) {
-        setMetrics(data);
-        return;
-      }
-
-      // Only check completion and handle resets for non-completed challenges
-      if (data.total_calls >= performanceGoals.number_of_calls_average) {
-        if (data.overall_performance >= performanceGoals.overall_performance_goal) {
-          // Challenge newly completed
-          await markChallengeComplete();
-          setMetrics(data);
-        } else {
-          // Challenge failed - reset only if not completed
-          await resetChallenge();
-        }
-      } else {
-        // Still in progress
-        setMetrics(data);
-      }
-    } catch (error) {
-      console.error('Error fetching metrics:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [memberId, characterName, performanceGoals, resetChallenge, markChallengeComplete, isCompleted]);
-
+  // Regular metrics polling
   useEffect(() => {
     fetchMetrics();
     const interval = setInterval(fetchMetrics, 2000);
@@ -527,33 +504,12 @@ function ScorePanel({
     { key: 'information_gathering', label: 'Information Gathering' },
     { key: 'program_explanation', label: 'Program Explanation' },
     { key: 'closing_skills', label: 'Closing Skills' },
-    { key: 'overall_effectiveness', label: 'Overall Effectiveness' },
+    { key: 'overall_effectiveness', label: 'Overall Effectiveness' }
   ];
 
-  if (!metrics && isLoading) {
-    return (
-      <div className="w-full text-sm h-[320px] flex flex-col">
-        <div className="flex-grow">
-          <h3 className="text-sm font-semibold mb-2 bg-white py-2">
-            <div className="h-4 bg-gray-200 rounded w-48 mb-2"></div>
-            <div className="h-4 bg-gray-200 rounded w-56"></div>
-          </h3>
-          {[...Array(7)].map((_, i) => (
-            <div key={i} className="bg-[#f8fdf6] p-3 rounded-lg mb-3 mr-2">
-              <div className="animate-pulse flex justify-between items-center mb-1">
-                <div className="h-4 bg-gray-200 rounded w-24"></div>
-                <div className="h-4 bg-gray-200 rounded w-12"></div>
-              </div>
-              <div className="h-2 bg-gray-200 rounded-full w-full"></div>
-            </div>
-          ))}
-        </div>
-        <div className="h-12"></div>
-      </div>
-    );
+  if (!metrics || isLoading) {
+    return <LoadingState />;
   }
-
-  const totalCalls = metrics?.total_calls || 0;
 
   return (
     <>
@@ -565,13 +521,13 @@ function ScorePanel({
               {isCompleted ? (
                 "The challenge has been completed. ✅"
               ) : (
-                `${performanceGoals.number_of_calls_average - totalCalls} ${
-                  performanceGoals.number_of_calls_average - totalCalls === 1 ? 'call' : 'calls'
+                `${performanceGoals.number_of_calls_average - metrics.total_calls} ${
+                  performanceGoals.number_of_calls_average - metrics.total_calls === 1 ? 'call' : 'calls'
                 } left to complete the challenge.`
               )}
             </div>
             <div>
-              Your score from last {totalCalls} {totalCalls === 1 ? 'call' : 'calls'}:
+              Your score from last {metrics.total_calls} {metrics.total_calls === 1 ? 'call' : 'calls'}:
             </div>
           </h3>
           {categories.map(({ key, label }) => (
@@ -581,20 +537,23 @@ function ScorePanel({
                   {label}
                 </span>
                 <span className={`font-bold text-green-500 ${key === 'overall_performance' ? 'text-lg' : 'text-xs'}`}>
-                  {(metrics?.[key as keyof PerformanceMetrics] ?? 0)}/100
+                  {(metrics[key as keyof PerformanceMetrics] ?? 0)}/100
                 </span>
               </div>
               <div className={`bg-gray-200 rounded-full overflow-hidden ${key === 'overall_performance' ? 'h-3' : 'h-2'}`}>
                 <div 
                   className="h-full bg-green-500 rounded-full transition-all duration-300"
-                  style={{ width: `${metrics?.[key as keyof PerformanceMetrics] ?? 0}%` }}
+                  style={{ width: `${metrics[key as keyof PerformanceMetrics] ?? 0}%` }}
                 />
               </div>
             </div>
           ))}
         </div>
         <button 
-          onClick={handleRecordsClick}
+          onClick={(e) => {
+            e.preventDefault();
+            window.top!.location.href = 'https://app.trainedbyai.com/call-records';
+          }}
           className="w-full py-3 rounded-[20px] text-black font-semibold text-lg transition-all hover:opacity-90 hover:shadow-lg bg-white shadow-md mb-6"
         >
           Go to Call Records
@@ -603,6 +562,27 @@ function ScorePanel({
     </>
   );
 }
+
+const LoadingState = () => (
+  <div className="w-full text-sm h-[320px] flex flex-col">
+    <div className="flex-grow">
+      <h3 className="text-sm font-semibold mb-2 bg-white py-2">
+        <div className="h-4 bg-gray-200 rounded w-48 mb-2"></div>
+        <div className="h-4 bg-gray-200 rounded w-56"></div>
+      </h3>
+      {[...Array(7)].map((_, i) => (
+        <div key={i} className="bg-[#f8fdf6] p-3 rounded-lg mb-3 mr-2">
+          <div className="animate-pulse flex justify-between items-center mb-1">
+            <div className="h-4 bg-gray-200 rounded w-24"></div>
+            <div className="h-4 bg-gray-200 rounded w-12"></div>
+          </div>
+          <div className="h-2 bg-gray-200 rounded-full w-full"></div>
+        </div>
+      ))}
+    </div>
+    <div className="h-12"></div>
+  </div>
+);
 
 function LockedOverlay({ 
   previousAssistant, 
