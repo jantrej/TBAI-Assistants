@@ -439,8 +439,6 @@ function ScorePanel({
         overall_effectiveness: 0,
         total_calls: 0
       });
-
-      await fetchMetrics();
     } catch (error) {
       console.error('Error resetting challenge:', error);
     }
@@ -465,7 +463,7 @@ function ScorePanel({
   }, [memberId, characterName, teamId]);
 
   const fetchMetrics = useCallback(async () => {
-    if (!memberId || !characterName || challengeStatus === 'completed') return;
+    if (!memberId || !characterName) return;
 
     try {
       const timestamp = new Date().getTime();
@@ -480,12 +478,19 @@ function ScorePanel({
       
       const data = await response.json();
       
+      // If challenge is already completed, just update the metrics
+      if (challengeStatus === 'completed') {
+        setMetrics(data);
+        return;
+      }
+
+      // Check for new completion
       if (data.total_calls >= performanceGoals.number_of_calls_average) {
         if (data.overall_performance >= performanceGoals.overall_performance_goal) {
-          // Challenge completed successfully
+          // Challenge newly completed
           setChallengeStatus('completed');
           setMetrics(data);
-          await markChallengeComplete(); // Persist completion status
+          await markChallengeComplete();
         } else {
           // Challenge failed - reset immediately
           await resetChallenge();
@@ -502,14 +507,12 @@ function ScorePanel({
   }, [memberId, characterName, performanceGoals, resetChallenge, markChallengeComplete, challengeStatus]);
 
   useEffect(() => {
-    if (challengeStatus !== 'completed') {
-      fetchMetrics();
-      const interval = setInterval(fetchMetrics, 2000);
-      return () => clearInterval(interval);
-    }
-  }, [fetchMetrics, challengeStatus]);
+    fetchMetrics();
+    // Always keep fetching metrics to update stats, even when completed
+    const interval = setInterval(fetchMetrics, 2000);
+    return () => clearInterval(interval);
+  }, [fetchMetrics]);
 
-  // Rest of the component remains the same...
   const categories = [
     { key: 'overall_performance', label: 'Overall Performance' },
     { key: 'engagement', label: 'Engagement' },
@@ -592,6 +595,7 @@ function ScorePanel({
     </>
   );
 }
+
 function LockedOverlay({ 
   previousAssistant, 
   isLastLocked, 
