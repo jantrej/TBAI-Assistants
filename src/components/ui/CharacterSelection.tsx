@@ -1,4 +1,4 @@
-'use client'
+F'use client'
 
 import { useState, useEffect, useLayoutEffect, useRef, useCallback } from "react"
 import Image from "next/image"
@@ -374,7 +374,7 @@ function ScorePanel({
 }) {
   const [metrics, setMetrics] = useState<PerformanceMetrics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [challengeStatus, setChallengeStatus] = useState<'in_progress' | 'completed' | 'failed'>('in_progress');
+  const [challengeStatus, setChallengeStatus] = useState<'in_progress' | 'completed'>('in_progress');
   const previousMetrics = useRef<PerformanceMetrics | null>(null);
   const displayMetrics = metrics || previousMetrics.current;
 
@@ -397,15 +397,14 @@ function ScorePanel({
       
       const data = await response.json();
       previousMetrics.current = metrics;
-      setMetrics(data);
-
-      // Update challenge status
-      if (data.total_calls >= performanceGoals.number_of_calls_average) {
-        const isAchieved = data.overall_performance >= performanceGoals.overall_performance_goal;
-        setChallengeStatus(isAchieved ? 'completed' : 'failed');
-      } else {
-        setChallengeStatus('in_progress');
+      
+      // Check if challenge is completed successfully
+      if (data.total_calls >= performanceGoals.number_of_calls_average && 
+          data.overall_performance >= performanceGoals.overall_performance_goal) {
+        setChallengeStatus('completed');
       }
+      
+      setMetrics(data);
     } catch (error) {
       console.error('Error fetching metrics:', error);
     } finally {
@@ -427,15 +426,18 @@ function ScorePanel({
     return () => clearInterval(interval);
   }, [memberId, characterName, fetchMetrics]);
 
+  // Reset challenge if not achieved
   useEffect(() => {
-    const resetChallenge = async () => {
-      const currentCalls = displayMetrics?.total_calls || 0;
-      const isAchieved = (displayMetrics?.overall_performance || 0) >= performanceGoals.overall_performance_goal;
-      
-      try {
-        if (currentCalls >= performanceGoals.number_of_calls_average && !isAchieved) {
-          console.log('Challenge failed, resetting metrics...');
-          const response = await fetch('/api/character-performance/reset', {
+    const checkAndResetChallenge = async () => {
+      if (!displayMetrics || challengeStatus === 'completed') return;
+
+      const currentCalls = displayMetrics.total_calls;
+      const isAchieved = displayMetrics.overall_performance >= performanceGoals.overall_performance_goal;
+
+      if (currentCalls >= performanceGoals.number_of_calls_average && !isAchieved) {
+        console.log('Challenge not achieved, resetting metrics...');
+        try {
+          const response = await fetch('/api/reset-challenge', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json'
@@ -451,19 +453,16 @@ function ScorePanel({
             throw new Error('Failed to reset challenge');
           }
 
-          console.log('Reset successful, refreshing metrics...');
+          // Fetch fresh metrics after reset
           await fetchMetrics();
-          setChallengeStatus('in_progress');
+        } catch (error) {
+          console.error('Error resetting challenge:', error);
         }
-      } catch (error) {
-        console.error('Error resetting challenge:', error);
       }
     };
 
-    if (displayMetrics && performanceGoals) {
-      resetChallenge();
-    }
-  }, [displayMetrics, performanceGoals, memberId, characterName, teamId, fetchMetrics]);
+    checkAndResetChallenge();
+  }, [displayMetrics, performanceGoals, memberId, characterName, teamId, fetchMetrics, challengeStatus]);
 
   const categories = [
     { key: 'overall_performance', label: 'Overall Performance' },
@@ -498,8 +497,8 @@ function ScorePanel({
     );
   }
 
-  const callsLeft = Math.max(0, performanceGoals.number_of_calls_average - (displayMetrics?.total_calls || 0));
   const totalCalls = displayMetrics?.total_calls || 0;
+  const callsLeft = performanceGoals.number_of_calls_average - totalCalls;
 
   return (
     <>
@@ -511,7 +510,7 @@ function ScorePanel({
               {challengeStatus === 'completed' ? (
                 "The challenge has been completed. ✅"
               ) : (
-                `${callsLeft} calls left to complete the challenge.`
+                `${callsLeft} ${callsLeft === 1 ? 'call' : 'calls'} left to complete the challenge.`
               )}
             </div>
             <div>
