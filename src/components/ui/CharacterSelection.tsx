@@ -375,33 +375,7 @@ function ScorePanel({
   const [metrics, setMetrics] = useState<PerformanceMetrics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [challengeStatus, setChallengeStatus] = useState<'in_progress' | 'completed'>('in_progress');
-  const completionChecked = useRef(false);
-
-  // Check initial completion status
-  useEffect(() => {
-    const checkInitialCompletion = async () => {
-      if (completionChecked.current || !memberId || !characterName) return;
-
-      try {
-        const response = await fetch(
-          `/api/challenge-completion?memberId=${memberId}&characterName=${characterName}`
-        );
-        
-        if (response.ok) {
-          const { isCompleted } = await response.json();
-          if (isCompleted) {
-            setChallengeStatus('completed');
-          }
-        }
-      } catch (error) {
-        console.error('Error checking completion status:', error);
-      } finally {
-        completionChecked.current = true;
-      }
-    };
-
-    checkInitialCompletion();
-  }, [memberId, characterName]);
+  const previousMetrics = useRef<PerformanceMetrics | null>(null);
 
   const handleRecordsClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -409,8 +383,6 @@ function ScorePanel({
   };
 
   const resetChallenge = useCallback(async () => {
-    if (challengeStatus === 'completed') return; // Don't reset if already completed
-
     try {
       console.log('Resetting challenge...');
       const response = await fetch('/api/reset-challenge', {
@@ -429,6 +401,7 @@ function ScorePanel({
         throw new Error('Failed to reset challenge');
       }
 
+      // Set metrics to initial state immediately
       setMetrics({
         overall_performance: 0,
         engagement: 0,
@@ -440,32 +413,15 @@ function ScorePanel({
         total_calls: 0
       });
 
+      // Refetch metrics to ensure sync with server
       await fetchMetrics();
     } catch (error) {
       console.error('Error resetting challenge:', error);
     }
-  }, [memberId, characterName, teamId, challengeStatus]);
-
-  const markChallengeComplete = useCallback(async () => {
-    try {
-      await fetch('/api/mark-challenge-complete', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          memberId,
-          characterName,
-          teamId
-        })
-      });
-    } catch (error) {
-      console.error('Error marking challenge complete:', error);
-    }
   }, [memberId, characterName, teamId]);
 
   const fetchMetrics = useCallback(async () => {
-    if (!memberId || !characterName || challengeStatus === 'completed') return;
+    if (!memberId || !characterName) return;
 
     try {
       const timestamp = new Date().getTime();
@@ -480,12 +436,12 @@ function ScorePanel({
       
       const data = await response.json();
       
+      // Check if challenge is completed or needs reset
       if (data.total_calls >= performanceGoals.number_of_calls_average) {
         if (data.overall_performance >= performanceGoals.overall_performance_goal) {
           // Challenge completed successfully
           setChallengeStatus('completed');
           setMetrics(data);
-          await markChallengeComplete(); // Persist completion status
         } else {
           // Challenge failed - reset immediately
           await resetChallenge();
@@ -499,17 +455,15 @@ function ScorePanel({
     } finally {
       setIsLoading(false);
     }
-  }, [memberId, characterName, performanceGoals, resetChallenge, markChallengeComplete, challengeStatus]);
+  }, [memberId, characterName, performanceGoals, resetChallenge]);
 
   useEffect(() => {
-    if (challengeStatus !== 'completed') {
-      fetchMetrics();
-      const interval = setInterval(fetchMetrics, 2000);
-      return () => clearInterval(interval);
-    }
-  }, [fetchMetrics, challengeStatus]);
+    fetchMetrics();
 
-  // Rest of the component remains the same...
+    const interval = setInterval(fetchMetrics, 2000);
+    return () => clearInterval(interval);
+  }, [fetchMetrics]);
+
   const categories = [
     { key: 'overall_performance', label: 'Overall Performance' },
     { key: 'engagement', label: 'Engagement' },
