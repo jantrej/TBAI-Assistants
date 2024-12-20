@@ -13,7 +13,6 @@ export async function GET(req: Request) {
       );
     }
 
-    // Query your database to check if this challenge was completed
     const response = await fetch(
       `${process.env.NEXT_PUBLIC_SUPABASE_URL}/challenge_completion_status`,
       {
@@ -22,6 +21,10 @@ export async function GET(req: Request) {
         }
       }
     );
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch completion status');
+    }
 
     const data = await response.json();
     return NextResponse.json({ isCompleted: data.is_completed });
