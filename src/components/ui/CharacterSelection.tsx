@@ -384,7 +384,6 @@ function ScorePanel({
   const [isLoading, setIsLoading] = useState(true);
   const [isCompleted, setIsCompleted] = useState(false);
   const completionChecked = useRef(false);
-  const originalGoals = useRef(performanceGoals);
 
   // Check initial completion status once
   useEffect(() => {
@@ -400,8 +399,6 @@ function ScorePanel({
           const { isCompleted: wasCompleted } = await response.json();
           if (wasCompleted) {
             setIsCompleted(true);
-            // Store the original goals when we confirm completion
-            originalGoals.current = performanceGoals;
           }
         }
       } catch (error) {
@@ -412,61 +409,14 @@ function ScorePanel({
     };
 
     checkInitialCompletion();
-  }, [memberId, characterName, performanceGoals]);
-
-  const fetchMetrics = useCallback(async () => {
-    if (!memberId || !characterName) return;
-
-    try {
-      const timestamp = new Date().getTime();
-      const random = Math.random();
-      const response = await fetch(
-        `/api/character-performance?memberId=${memberId}&characterName=${characterName}&t=${timestamp}&r=${random}`
-      );
-      
-      if (!response.ok) {
-        throw new Error(await response.text());
-      }
-      
-      const data = await response.json();
-      
-      // If challenge is already completed, just update metrics without any checks
-      if (isCompleted) {
-        setMetrics(data);
-        return;
-      }
-
-      // Only check completion for non-completed challenges
-      if (data.total_calls >= performanceGoals.number_of_calls_average) {
-        if (data.overall_performance >= performanceGoals.overall_performance_goal) {
-          setIsCompleted(true);
-          originalGoals.current = performanceGoals;
-          setMetrics(data);
-          await markChallengeComplete();
-        } else {
-          await resetChallenge();
-        }
-      } else {
-        setMetrics(data);
-      }
-    } catch (error) {
-      console.error('Error fetching metrics:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [memberId, characterName, performanceGoals, isCompleted]);
-
-  useEffect(() => {
-    fetchMetrics();
-    const interval = setInterval(fetchMetrics, 2000);
-    return () => clearInterval(interval);
-  }, [fetchMetrics]);
+  }, [memberId, characterName]);
 
   const resetChallenge = useCallback(async () => {
     if (isCompleted) return; // Never reset if completed
 
     try {
-      await fetch('/api/reset-challenge', {
+      console.log('Resetting challenge...');
+      const response = await fetch('/api/reset-challenge', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -477,6 +427,10 @@ function ScorePanel({
           teamId
         })
       });
+
+      if (!response.ok) {
+        throw new Error('Failed to reset challenge');
+      }
 
       setMetrics({
         overall_performance: 0,
@@ -504,13 +458,60 @@ function ScorePanel({
           memberId,
           characterName,
           teamId,
-          goals: originalGoals.current // Store original goals with completion
+          goals: performanceGoals // Store goals at completion
         })
       });
+      setIsCompleted(true);
     } catch (error) {
       console.error('Error marking challenge complete:', error);
     }
-  }, [memberId, characterName, teamId]);
+  }, [memberId, characterName, teamId, performanceGoals]);
+
+  const fetchMetrics = useCallback(async () => {
+    if (!memberId || !characterName) return;
+
+    try {
+      const timestamp = new Date().getTime();
+      const random = Math.random();
+      const response = await fetch(
+        `/api/character-performance?memberId=${memberId}&characterName=${characterName}&t=${timestamp}&r=${random}`
+      );
+      
+      if (!response.ok) {
+        throw new Error(await response.text());
+      }
+      
+      const data = await response.json();
+      
+      // If challenge is already completed, just update metrics
+      if (isCompleted) {
+        setMetrics(data);
+        return;
+      }
+
+      // Only check completion for non-completed challenges
+      if (data.total_calls >= performanceGoals.number_of_calls_average) {
+        if (data.overall_performance >= performanceGoals.overall_performance_goal) {
+          await markChallengeComplete();
+          setMetrics(data);
+        } else {
+          await resetChallenge();
+        }
+      } else {
+        setMetrics(data);
+      }
+    } catch (error) {
+      console.error('Error fetching metrics:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [memberId, characterName, performanceGoals, resetChallenge, markChallengeComplete, isCompleted]);
+
+  useEffect(() => {
+    fetchMetrics();
+    const interval = setInterval(fetchMetrics, 2000);
+    return () => clearInterval(interval);
+  }, [fetchMetrics]);
 
   const categories = [
     { key: 'overall_performance', label: 'Overall Performance' },
@@ -521,6 +522,11 @@ function ScorePanel({
     { key: 'closing_skills', label: 'Closing Skills' },
     { key: 'overall_effectiveness', label: 'Overall Effectiveness' },
   ];
+
+  const handleRecordsClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    window.top!.location.href = 'https://app.trainedbyai.com/call-records';
+  };
 
   if (!metrics && isLoading) {
     return (
