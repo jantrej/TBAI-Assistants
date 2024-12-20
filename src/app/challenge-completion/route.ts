@@ -14,7 +14,7 @@ export async function GET(req: Request) {
     }
 
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/challenge_completion`,
+      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/challenge_completion?memberId=${memberId}&characterName=${characterName}`,
       {
         headers: {
           'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`
@@ -22,8 +22,15 @@ export async function GET(req: Request) {
       }
     );
 
+    if (!response.ok) {
+      throw new Error('Failed to fetch challenge completion status');
+    }
+
     const data = await response.json();
-    return NextResponse.json({ isCompleted: data.is_completed });
+    return NextResponse.json({ 
+      isCompleted: data.is_completed,
+      completionMetrics: data.completion_metrics || null 
+    });
   } catch (error) {
     console.error('Error checking challenge completion:', error);
     return NextResponse.json(
