@@ -1,10 +1,8 @@
-import { NextResponse } from 'next/server';
-
 export async function POST(req: Request) {
   try {
-    const { memberId, characterName, teamId, goals } = await req.json();
+    const { memberId, characterName, teamId, metrics } = await req.json();
 
-    if (!memberId || !characterName || !goals) {
+    if (!memberId || !characterName) {
       return NextResponse.json(
         { error: 'Missing required parameters' },
         { status: 400 }
@@ -12,7 +10,7 @@ export async function POST(req: Request) {
     }
 
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/mark_challenge_complete`,
+      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/challenge_completion`,
       {
         method: 'POST',
         headers: {
@@ -23,7 +21,8 @@ export async function POST(req: Request) {
           member_id: memberId,
           character_name: characterName,
           team_id: teamId,
-          original_goals: goals
+          completion_metrics: metrics,
+          is_completed: true
         })
       }
     );
