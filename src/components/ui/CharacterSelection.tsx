@@ -385,7 +385,7 @@ function ScorePanel({
   const [isCompleted, setIsCompleted] = useState(false);
   const completionChecked = useRef(false);
 
-  // Check initial completion status once
+  // Check initial completion status only once
   useEffect(() => {
     const checkInitialCompletion = async () => {
       if (completionChecked.current || !memberId || !characterName) return;
@@ -411,12 +411,9 @@ function ScorePanel({
     checkInitialCompletion();
   }, [memberId, characterName]);
 
-  const resetChallenge = useCallback(async () => {
-    if (isCompleted) return; // Never reset if completed
-
+  const markChallengeComplete = useCallback(async () => {
     try {
-      console.log('Resetting challenge...');
-      const response = await fetch('/api/reset-challenge', {
+      const response = await fetch('/api/mark-challenge-complete', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -428,9 +425,27 @@ function ScorePanel({
         })
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to reset challenge');
+      if (response.ok) {
+        setIsCompleted(true);
       }
+    } catch (error) {
+      console.error('Error marking challenge complete:', error);
+    }
+  }, [memberId, characterName, teamId]);
+
+  const resetChallenge = useCallback(async () => {
+    try {
+      await fetch('/api/reset-challenge', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          memberId,
+          characterName,
+          teamId
+        })
+      });
 
       setMetrics({
         overall_performance: 0,
@@ -445,27 +460,7 @@ function ScorePanel({
     } catch (error) {
       console.error('Error resetting challenge:', error);
     }
-  }, [memberId, characterName, teamId, isCompleted]);
-
-  const markChallengeComplete = useCallback(async () => {
-    try {
-      await fetch('/api/mark-challenge-complete', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          memberId,
-          characterName,
-          teamId,
-          goals: performanceGoals // Store goals at completion
-        })
-      });
-      setIsCompleted(true);
-    } catch (error) {
-      console.error('Error marking challenge complete:', error);
-    }
-  }, [memberId, characterName, teamId, performanceGoals]);
+  }, [memberId, characterName, teamId]);
 
   const fetchMetrics = useCallback(async () => {
     if (!memberId || !characterName) return;
@@ -483,13 +478,13 @@ function ScorePanel({
       
       const data = await response.json();
       
-      // If challenge is already completed, just update metrics
+      // If already completed, just update metrics without any checks
       if (isCompleted) {
         setMetrics(data);
         return;
       }
 
-      // Only check completion for non-completed challenges
+      // Only perform checks for non-completed challenges
       if (data.total_calls >= performanceGoals.number_of_calls_average) {
         if (data.overall_performance >= performanceGoals.overall_performance_goal) {
           await markChallengeComplete();
@@ -513,6 +508,11 @@ function ScorePanel({
     return () => clearInterval(interval);
   }, [fetchMetrics]);
 
+  const handleRecordsClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    window.top!.location.href = 'https://app.trainedbyai.com/call-records';
+  };
+
   const categories = [
     { key: 'overall_performance', label: 'Overall Performance' },
     { key: 'engagement', label: 'Engagement' },
@@ -522,11 +522,6 @@ function ScorePanel({
     { key: 'closing_skills', label: 'Closing Skills' },
     { key: 'overall_effectiveness', label: 'Overall Effectiveness' },
   ];
-
-  const handleRecordsClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    window.top!.location.href = 'https://app.trainedbyai.com/call-records';
-  };
 
   if (!metrics && isLoading) {
     return (
