@@ -13,8 +13,9 @@ export async function GET(req: Request) {
       );
     }
 
+    // Query your database to check if this challenge was completed
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/challenge_completion`,
+      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/challenge_completion_status`,
       {
         headers: {
           'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`
