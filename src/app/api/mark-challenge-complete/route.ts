@@ -2,9 +2,9 @@ import { NextResponse } from 'next/server';
 
 export async function POST(req: Request) {
   try {
-    const { memberId, characterName, teamId } = await req.json();
+    const { memberId, characterName, teamId, goals } = await req.json();
 
-    if (!memberId || !characterName) {
+    if (!memberId || !characterName || !goals) {
       return NextResponse.json(
         { error: 'Missing required parameters' },
         { status: 400 }
@@ -23,7 +23,7 @@ export async function POST(req: Request) {
           member_id: memberId,
           character_name: characterName,
           team_id: teamId,
-          completed_at: new Date().toISOString()
+          original_goals: goals
         })
       }
     );
