@@ -366,6 +366,29 @@ interface CompletionState {
   };
 }
 
+'use client'
+
+import { useState, useEffect, useCallback, useRef } from "react";
+
+interface PerformanceMetrics {
+  overall_performance: number;
+  engagement: number;
+  objection_handling: number;
+  information_gathering: number;
+  program_explanation: number;
+  closing_skills: number;
+  overall_effectiveness: number;
+  total_calls: number;
+}
+
+interface CompletionState {
+  isCompleted: boolean;
+  originalGoals: {
+    overall_performance_goal: number;
+    number_of_calls_average: number;
+  };
+}
+
 function ScorePanel({ 
   characterName, 
   memberId,
@@ -382,7 +405,11 @@ function ScorePanel({
 }) {
   const [metrics, setMetrics] = useState<PerformanceMetrics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const wasEverCompleted = useRef(false);
+  const [completionState, setCompletionState] = useState<CompletionState>({
+    isCompleted: false,
+    originalGoals: performanceGoals
+  });
+  const completionChecked = useRef(false);
 
   const categories = [
     { key: 'overall_performance', label: 'Overall Performance' },
@@ -394,29 +421,34 @@ function ScorePanel({
     { key: 'overall_effectiveness', label: 'Overall Effectiveness' },
   ] as const;
 
-  // Check initial completion status
+  // Check initial completion status only once
   useEffect(() => {
     const checkInitialCompletion = async () => {
+      if (completionChecked.current || !memberId || !characterName) return;
+
       try {
         const response = await fetch(
           `/api/challenge-completion?memberId=${memberId}&characterName=${characterName}`
         );
         
         if (response.ok) {
-          const { isCompleted } = await response.json();
+          const { isCompleted, originalGoals } = await response.json();
           if (isCompleted) {
-            wasEverCompleted.current = true;
+            setCompletionState({
+              isCompleted: true,
+              originalGoals: originalGoals || performanceGoals
+            });
           }
         }
       } catch (error) {
         console.error('Error checking completion status:', error);
+      } finally {
+        completionChecked.current = true;
       }
     };
 
-    if (!wasEverCompleted.current && memberId && characterName) {
-      checkInitialCompletion();
-    }
-  }, [memberId, characterName]);
+    checkInitialCompletion();
+  }, [memberId, characterName, performanceGoals]);
 
   const handleRecordsClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -439,16 +471,19 @@ function ScorePanel({
       
       const data = await response.json();
       
-      // If it was ever completed, just update metrics without any checks
-      if (wasEverCompleted.current) {
+      // If already completed, just update metrics without any checks
+      if (completionState.isCompleted) {
         setMetrics(data);
         return;
       }
 
-      // Only check completion for non-completed challenges
+      // Check for completion only if not already completed
       if (data.total_calls >= performanceGoals.number_of_calls_average && 
           data.overall_performance >= performanceGoals.overall_performance_goal) {
-        wasEverCompleted.current = true;
+        setCompletionState({
+          isCompleted: true,
+          originalGoals: performanceGoals
+        });
         await markChallengeComplete();
       }
       
@@ -458,7 +493,7 @@ function ScorePanel({
     } finally {
       setIsLoading(false);
     }
-  }, [memberId, characterName, performanceGoals]);
+  }, [memberId, characterName, performanceGoals, completionState.isCompleted]);
 
   const markChallengeComplete = useCallback(async () => {
     try {
@@ -470,13 +505,14 @@ function ScorePanel({
         body: JSON.stringify({
           memberId,
           characterName,
-          teamId
+          teamId,
+          goals: performanceGoals // Store the original goals
         })
       });
     } catch (error) {
       console.error('Error marking challenge complete:', error);
     }
-  }, [memberId, characterName, teamId]);
+  }, [memberId, characterName, teamId, performanceGoals]);
 
   useEffect(() => {
     fetchMetrics();
@@ -509,12 +545,57 @@ function ScorePanel({
 
   return (
     <>
-      <style jsx>{scrollbarStyles}</style>
+      <style jsx>{`
+        .scrollbar-thin {
+          scrollbar-width: thin;
+          scrollbar-color: #f2f3f8 transparent;
+        }
+        
+        .scrollbar-thin::-webkit-scrollbar {
+          width: 2px !important;
+          display: block !important;
+        }
+        
+        .scrollbar-thin::-webkit-scrollbar-track {
+          background: transparent !important;
+          display: block !important;
+        }
+        
+        .scrollbar-thin::-webkit-scrollbar-thumb {
+          background-color: #f2f3f8 !important;
+          border-radius: 20px !important;
+          display: block !important;
+          opacity: 1 !important;
+          visibility: visible !important;
+        }
+
+        .scrollbar-thin::-webkit-scrollbar-button:single-button {
+          display: none !important;
+          height: 0 !important;
+          width: 0 !important;
+          background: none !important;
+        }
+        
+        .scrollbar-thin::-webkit-scrollbar-button:start {
+          display: none !important;
+        }
+        
+        .scrollbar-thin::-webkit-scrollbar-button:end {
+          display: none !important;
+        }
+        
+        .scrollbar-thin::-webkit-scrollbar-button:vertical:start:decrement,
+        .scrollbar-thin::-webkit-scrollbar-button:vertical:end:increment,
+        .scrollbar-thin::-webkit-scrollbar-button:vertical:start:increment,
+        .scrollbar-thin::-webkit-scrollbar-button:vertical:end:decrement {
+          display: none !important;
+        }
+      `}</style>
       <div className="w-full text-sm h-[320px] flex flex-col">
         <div className="flex-grow overflow-y-auto scrollbar-thin">
           <h3 className="text-sm font-semibold mb-2 sticky top-0 bg-white py-2 z-10">
             <div className="mb-1">
-              {wasEverCompleted.current ? (
+              {completionState.isCompleted ? (
                 "The challenge has been completed. ✅"
               ) : (
                 `${performanceGoals.number_of_calls_average - (metrics?.total_calls || 0)} ${
@@ -555,6 +636,8 @@ function ScorePanel({
     </>
   );
 }
+
+export default ScorePanel;
 
 function LockedOverlay({ 
   previousAssistant, 
