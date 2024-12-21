@@ -382,9 +382,24 @@ function ScorePanel({
 }) {
   const [metrics, setMetrics] = useState<PerformanceMetrics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isCompleted, setIsCompleted] = useState(false);
+  const [completionState, setCompletionState] = useState<{
+    isCompleted: boolean,
+    originalGoals?: typeof performanceGoals
+  }>({
+    isCompleted: false
+  });
+
+  const categories = [
+    { key: 'overall_performance', label: 'Overall Performance' },
+    { key: 'engagement', label: 'Engagement' },
+    { key: 'objection_handling', label: 'Objection Handling' },
+    { key: 'information_gathering', label: 'Information Gathering' },
+    { key: 'program_explanation', label: 'Program Explanation' },
+    { key: 'closing_skills', label: 'Closing Skills' },
+    { key: 'overall_effectiveness', label: 'Overall Effectiveness' },
+  ] as const;
+
   const completionChecked = useRef(false);
-  const wasEverCompleted = useRef(false);
 
   // Check initial completion status
   useEffect(() => {
@@ -397,10 +412,12 @@ function ScorePanel({
         );
         
         if (response.ok) {
-          const { isCompleted: wasCompleted } = await response.json();
-          if (wasCompleted) {
-            setIsCompleted(true);
-            wasEverCompleted.current = true;
+          const { isCompleted, originalGoals } = await response.json();
+          if (isCompleted) {
+            setCompletionState({
+              isCompleted: true,
+              originalGoals: originalGoals || performanceGoals
+            });
           }
         }
       } catch (error) {
@@ -411,7 +428,7 @@ function ScorePanel({
     };
 
     checkInitialCompletion();
-  }, [memberId, characterName]);
+  }, [memberId, characterName, performanceGoals]);
 
   const handleRecordsClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -434,8 +451,8 @@ function ScorePanel({
       
       const data = await response.json();
       
-      // If it was ever completed, just update metrics
-      if (wasEverCompleted.current || isCompleted) {
+      // If already completed, just update metrics
+      if (completionState.isCompleted) {
         setMetrics(data);
         return;
       }
@@ -444,8 +461,10 @@ function ScorePanel({
       if (data.total_calls >= performanceGoals.number_of_calls_average) {
         if (data.overall_performance >= performanceGoals.overall_performance_goal) {
           setMetrics(data);
-          setIsCompleted(true);
-          wasEverCompleted.current = true;
+          setCompletionState({
+            isCompleted: true,
+            originalGoals: performanceGoals
+          });
           await markChallengeComplete();
         } else {
           await resetChallenge();
@@ -458,7 +477,7 @@ function ScorePanel({
     } finally {
       setIsLoading(false);
     }
-  }, [memberId, characterName, performanceGoals, isCompleted]);
+  }, [memberId, characterName, performanceGoals, completionState.isCompleted]);
 
   const markChallengeComplete = useCallback(async () => {
     try {
@@ -469,16 +488,18 @@ function ScorePanel({
         },
         body: JSON.stringify({
           memberId,
-          characterName
+          characterName,
+          teamId,
+          goals: performanceGoals
         })
       });
     } catch (error) {
       console.error('Error marking challenge complete:', error);
     }
-  }, [memberId, characterName]);
+  }, [memberId, characterName, teamId, performanceGoals]);
 
   const resetChallenge = useCallback(async () => {
-    if (wasEverCompleted.current || isCompleted) return;
+    if (completionState.isCompleted) return;
 
     try {
       console.log('Resetting challenge...');
@@ -511,7 +532,7 @@ function ScorePanel({
     } catch (error) {
       console.error('Error resetting challenge:', error);
     }
-  }, [memberId, characterName, teamId, isCompleted]);
+  }, [memberId, characterName, teamId, completionState.isCompleted]);
 
   useEffect(() => {
     fetchMetrics();
@@ -519,7 +540,31 @@ function ScorePanel({
     return () => clearInterval(interval);
   }, [fetchMetrics]);
 
-  // Rest of the component remains the same
+  if (!metrics && isLoading) {
+    return (
+      <div className="w-full text-sm h-[320px] flex flex-col">
+        <div className="flex-grow">
+          <h3 className="text-sm font-semibold mb-2 bg-white py-2">
+            <div className="h-4 bg-gray-200 rounded w-48 mb-2"></div>
+            <div className="h-4 bg-gray-200 rounded w-56"></div>
+          </h3>
+          {[...Array(7)].map((_, i) => (
+            <div key={i} className="bg-[#f8fdf6] p-3 rounded-lg mb-3 mr-2">
+              <div className="animate-pulse flex justify-between items-center mb-1">
+                <div className="h-4 bg-gray-200 rounded w-24"></div>
+                <div className="h-4 bg-gray-200 rounded w-12"></div>
+              </div>
+              <div className="h-2 bg-gray-200 rounded-full w-full"></div>
+            </div>
+          ))}
+        </div>
+        <div className="h-12"></div>
+      </div>
+    );
+  }
+
+  const totalCalls = metrics?.total_calls || 0;
+
   return (
     <>
       <style jsx>{scrollbarStyles}</style>
@@ -527,16 +572,16 @@ function ScorePanel({
         <div className="flex-grow overflow-y-auto scrollbar-thin">
           <h3 className="text-sm font-semibold mb-2 sticky top-0 bg-white py-2 z-10">
             <div className="mb-1">
-              {wasEverCompleted.current || isCompleted ? (
+              {completionState.isCompleted ? (
                 "The challenge has been completed. ✅"
               ) : (
-                `${performanceGoals.number_of_calls_average - (metrics?.total_calls || 0)} ${
-                  performanceGoals.number_of_calls_average - (metrics?.total_calls || 0) === 1 ? 'call' : 'calls'
+                `${performanceGoals.number_of_calls_average - totalCalls} ${
+                  performanceGoals.number_of_calls_average - totalCalls === 1 ? 'call' : 'calls'
                 } left to complete the challenge.`
               )}
             </div>
             <div>
-              Your score from last {metrics?.total_calls || 0} {(metrics?.total_calls || 0) === 1 ? 'call' : 'calls'}:
+              Your score from last {totalCalls} {totalCalls === 1 ? 'call' : 'calls'}:
             </div>
           </h3>
           {categories.map(({ key, label }) => (
