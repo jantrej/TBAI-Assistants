@@ -382,12 +382,7 @@ function ScorePanel({
 }) {
   const [metrics, setMetrics] = useState<PerformanceMetrics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [completionState, setCompletionState] = useState<{
-    isCompleted: boolean,
-    originalGoals?: typeof performanceGoals
-  }>({
-    isCompleted: false
-  });
+  const wasEverCompleted = useRef(false);
 
   const categories = [
     { key: 'overall_performance', label: 'Overall Performance' },
@@ -399,36 +394,29 @@ function ScorePanel({
     { key: 'overall_effectiveness', label: 'Overall Effectiveness' },
   ] as const;
 
-  const completionChecked = useRef(false);
-
   // Check initial completion status
   useEffect(() => {
     const checkInitialCompletion = async () => {
-      if (completionChecked.current || !memberId || !characterName) return;
-
       try {
         const response = await fetch(
           `/api/challenge-completion?memberId=${memberId}&characterName=${characterName}`
         );
         
         if (response.ok) {
-          const { isCompleted, originalGoals } = await response.json();
+          const { isCompleted } = await response.json();
           if (isCompleted) {
-            setCompletionState({
-              isCompleted: true,
-              originalGoals: originalGoals || performanceGoals
-            });
+            wasEverCompleted.current = true;
           }
         }
       } catch (error) {
         console.error('Error checking completion status:', error);
-      } finally {
-        completionChecked.current = true;
       }
     };
 
-    checkInitialCompletion();
-  }, [memberId, characterName, performanceGoals]);
+    if (!wasEverCompleted.current && memberId && characterName) {
+      checkInitialCompletion();
+    }
+  }, [memberId, characterName]);
 
   const handleRecordsClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -451,33 +439,26 @@ function ScorePanel({
       
       const data = await response.json();
       
-      // If already completed, just update metrics
-      if (completionState.isCompleted) {
+      // If it was ever completed, just update metrics without any checks
+      if (wasEverCompleted.current) {
         setMetrics(data);
         return;
       }
 
       // Only check completion for non-completed challenges
-      if (data.total_calls >= performanceGoals.number_of_calls_average) {
-        if (data.overall_performance >= performanceGoals.overall_performance_goal) {
-          setMetrics(data);
-          setCompletionState({
-            isCompleted: true,
-            originalGoals: performanceGoals
-          });
-          await markChallengeComplete();
-        } else {
-          await resetChallenge();
-        }
-      } else {
-        setMetrics(data);
+      if (data.total_calls >= performanceGoals.number_of_calls_average && 
+          data.overall_performance >= performanceGoals.overall_performance_goal) {
+        wasEverCompleted.current = true;
+        await markChallengeComplete();
       }
+      
+      setMetrics(data);
     } catch (error) {
       console.error('Error fetching metrics:', error);
     } finally {
       setIsLoading(false);
     }
-  }, [memberId, characterName, performanceGoals, completionState.isCompleted]);
+  }, [memberId, characterName, performanceGoals]);
 
   const markChallengeComplete = useCallback(async () => {
     try {
@@ -489,50 +470,13 @@ function ScorePanel({
         body: JSON.stringify({
           memberId,
           characterName,
-          teamId,
-          goals: performanceGoals
+          teamId
         })
       });
     } catch (error) {
       console.error('Error marking challenge complete:', error);
     }
-  }, [memberId, characterName, teamId, performanceGoals]);
-
-  const resetChallenge = useCallback(async () => {
-    if (completionState.isCompleted) return;
-
-    try {
-      console.log('Resetting challenge...');
-      const response = await fetch('/api/reset-challenge', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          memberId,
-          characterName,
-          teamId
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to reset challenge');
-      }
-
-      setMetrics({
-        overall_performance: 0,
-        engagement: 0,
-        objection_handling: 0,
-        information_gathering: 0,
-        program_explanation: 0,
-        closing_skills: 0,
-        overall_effectiveness: 0,
-        total_calls: 0
-      });
-    } catch (error) {
-      console.error('Error resetting challenge:', error);
-    }
-  }, [memberId, characterName, teamId, completionState.isCompleted]);
+  }, [memberId, characterName, teamId]);
 
   useEffect(() => {
     fetchMetrics();
@@ -563,8 +507,6 @@ function ScorePanel({
     );
   }
 
-  const totalCalls = metrics?.total_calls || 0;
-
   return (
     <>
       <style jsx>{scrollbarStyles}</style>
@@ -572,16 +514,16 @@ function ScorePanel({
         <div className="flex-grow overflow-y-auto scrollbar-thin">
           <h3 className="text-sm font-semibold mb-2 sticky top-0 bg-white py-2 z-10">
             <div className="mb-1">
-              {completionState.isCompleted ? (
+              {wasEverCompleted.current ? (
                 "The challenge has been completed. ✅"
               ) : (
-                `${performanceGoals.number_of_calls_average - totalCalls} ${
-                  performanceGoals.number_of_calls_average - totalCalls === 1 ? 'call' : 'calls'
+                `${performanceGoals.number_of_calls_average - (metrics?.total_calls || 0)} ${
+                  performanceGoals.number_of_calls_average - (metrics?.total_calls || 0) === 1 ? 'call' : 'calls'
                 } left to complete the challenge.`
               )}
             </div>
             <div>
-              Your score from last {totalCalls} {totalCalls === 1 ? 'call' : 'calls'}:
+              Your score from last {metrics?.total_calls || 0} {(metrics?.total_calls || 0) === 1 ? 'call' : 'calls'}:
             </div>
           </h3>
           {categories.map(({ key, label }) => (
