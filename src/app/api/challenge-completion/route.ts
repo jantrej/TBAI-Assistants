@@ -14,25 +14,35 @@ export async function GET(req: Request) {
     }
 
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/challenge_completion`,
+      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/challenge_completions?member_id=eq.${memberId}&character_name=eq.${characterName}`,
       {
         headers: {
           'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`
-        },
-        body: JSON.stringify({
-          member_id: memberId,
-          character_name: characterName
-        }),
-        method: 'POST'
+        }
       }
     );
 
-    const data = await response.json();
-    
+    if (!response.ok) {
+      throw new Error('Failed to check completion status');
+    }
+
+    const completions = await response.json();
+
+    // If there's a completion record, return completed status and original goals
+    if (completions.length > 0) {
+      return NextResponse.json({
+        isCompleted: true,
+        completedAt: completions[0].completed_at,
+        originalGoals: completions[0].goals_when_completed
+      });
+    }
+
+    // If no completion record found, return not completed
     return NextResponse.json({
-      isCompleted: Boolean(data.is_completed),
-      originalGoals: data.original_goals
+      isCompleted: false,
+      originalGoals: null
     });
+
   } catch (error) {
     console.error('Error checking challenge completion:', error);
     return NextResponse.json(
