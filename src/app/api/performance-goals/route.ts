@@ -25,8 +25,8 @@ export async function GET(request: Request) {
     
     if (!rows.length) {
       return NextResponse.json({
-        overall_performance_goal: 85,
-        number_of_calls_average: 10,
+        overall_performance_goal: 50,
+        number_of_calls_average: 3,
         team_id: teamId,
         created_at: new Date().toISOString()
       });
