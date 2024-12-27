@@ -47,8 +47,8 @@ export async function GET(request: Request) {
 
     // Default values for performance metrics
     const defaultSettings = {
-      past_calls_count: 10,
-      overall_performance_goal: 85
+      past_calls_count: 3,
+      overall_performance_goal: 50
     };
 
     // Get metrics based on past X calls
