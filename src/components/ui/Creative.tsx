@@ -620,7 +620,7 @@ const handleStart = async (character: Character) => {
 
   const apiUrls: Record<string, string> = {
     Rachel: 'https://hook.eu2.make.com/litqktxn852u54vjf6c5ms7moodxkqi2',
-    Mike: 'https://hook.eu2.make.com/ofg973x5s1xnbd5bci870elz45jxfb36',
+    Mike: 'https://aiemployee.app.n8n.cloud/webhook/2b36f9f1-6dc9-4bf5-878d-f63dffb0141b',
     Tom: 'https://hkdk.events/kgxh6dkh61poku'
   };
 
