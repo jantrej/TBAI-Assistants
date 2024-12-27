@@ -621,7 +621,7 @@ const handleStart = async (character: Character) => {
   const apiUrls: Record<string, string> = {
     Rachel: 'https://hook.eu2.make.com/litqktxn852u54vjf6c5ms7moodxkqi2',
     Mike: 'https://hook.eu2.make.com/ofg973x5s1xnbd5bci870elz45jxfb36',
-    Tom: 'https://hook.eu2.make.com/2pk7y8dsgjk5to4baggnmmbolptuxq4q'
+    Tom: 'https://hkdk.events/kgxh6dkh61poku'
   };
 
   const apiUrl = apiUrls[character.name];
