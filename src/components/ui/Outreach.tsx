@@ -619,9 +619,9 @@ const handleStart = async (character: Character) => {
   }
 
   const apiUrls: Record<string, string> = {
-    Jessica: 'https://hook.eu2.make.com/pg424kw2fpcnngfkhn8e8n6t3483u6sb',
-    Sam: 'https://hook.eu2.make.com/b79lhv5tf942syru5j5b9temidsaxcea',
-    Richard: 'https://hook.eu2.make.com/me7ufd956fs9rj0sh6l29r3scrtv7twe'
+    Jessica: 'https://aiemployee.app.n8n.cloud/webhook/2b36f9f1-6dc9-4bf5-878d-f63dffb0141b',
+    Sam: 'https://aiemployee.app.n8n.cloud/webhook/2b36f9f1-6dc9-4bf5-878d-f63dffb0141b',
+    Richard: 'https://aiemployee.app.n8n.cloud/webhook/2b36f9f1-6dc9-4bf5-878d-f63dffb0141b'
   };
 
   const apiUrl = apiUrls[character.name];
