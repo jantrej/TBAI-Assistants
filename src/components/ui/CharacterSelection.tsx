@@ -14,13 +14,14 @@ function useCharacterState(
     number_of_calls_average: number;
   } | null
 ) {
-  const [characterStates, setCharacterStates] = useState<{
-    [key: string]: {
-      isLocked: boolean;
-      animationShown: boolean;
-      metrics: any | null;
-    };
-  }>({});
+const [characterStates, setCharacterStates] = useState<{
+  [key: string]: {
+    isLocked: boolean;
+    animationShown: boolean;
+    metrics: any | null;
+    isCompleted: boolean;
+  };
+}>({});
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const initializationRef = useRef(false);
 
@@ -389,13 +390,14 @@ function LockedOverlay({
   showUnlockAnimation?: boolean;
   onAnimationComplete?: () => void;
   characterName: string;
-  characterStates: {
-    [key: string]: {
-      isLocked: boolean;
-      animationShown: boolean;
-      metrics: any;
-    };
+characterStates: {
+  [key: string]: {
+    isLocked: boolean;
+    animationShown: boolean;
+    metrics: any;
+    isCompleted: boolean;
   };
+};
 }) {
   const glowColor = 
     difficulty === 'Easy' 
