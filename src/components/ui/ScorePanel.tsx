@@ -253,66 +253,53 @@ return (
     `}</style>
     <div className="w-full text-sm h-[320px] flex flex-col">
       <div className="flex-grow overflow-y-auto scrollbar-thin">
-<h3 className="text-sm font-semibold mb-2 sticky top-0 bg-white py-2 z-10">
-  <div className="mb-1">
-    {wasEverCompleted.current || (metrics && metrics.total_calls >= performanceGoals.number_of_calls_average && 
-     metrics.overall_performance >= performanceGoals.overall_performance_goal) ? (
-      "The challenge has been completed. ✅"
-    ) : (
-      `${Math.max(0, performanceGoals.number_of_calls_average - (metrics?.total_calls || 0))} ${
-        performanceGoals.number_of_calls_average - (metrics?.total_calls || 0) === 1 ? 'call' : 'calls'
-      } left to complete the challenge.`
-    )}
-  </div>
-    {wasEverCompleted.current ? (
-      "The challenge has been completed. ✅"
-    ) : metrics && 
-        metrics.total_calls >= performanceGoals.number_of_calls_average && 
-        metrics.overall_performance >= performanceGoals.overall_performance_goal ? (
-      "The challenge has been completed. ✅"
-    ) : (
-      `${Math.max(0, performanceGoals.number_of_calls_average - (metrics?.total_calls || 0))} ${
-        performanceGoals.number_of_calls_average - (metrics?.total_calls || 0) === 1 ? 'call' : 'calls'
-      } left to complete the challenge.`
-    )}
-  </div>
-  <div>
-    Your score from last {metrics?.total_calls || 0} {(metrics?.total_calls || 0) === 1 ? 'call' : 'calls'}:
-  </div>
-</h3>
-          {categories.map(({ key, label }) => (
-            <div key={key} className="bg-[#f8fdf6] p-3 rounded-lg mb-3 mr-2">
-              <div className="flex justify-between items-center mb-1">
-                <span className={`font-medium ${key === 'overall_performance' ? 'text-base' : 'text-xs'}`}>
-                  {label}
-                </span>
-                <span className={`font-bold text-green-500 ${key === 'overall_performance' ? 'text-lg' : 'text-xs'}`}>
-                  {(metrics?.[key as keyof PerformanceMetrics] ?? 0)}/100
-                </span>
-              </div>
-              <div className={`bg-gray-200 rounded-full overflow-hidden ${key === 'overall_performance' ? 'h-3' : 'h-2'}`}>
-                <div 
-                  className="h-full bg-green-500 rounded-full transition-all duration-300"
-                  style={{ width: `${metrics?.[key as keyof PerformanceMetrics] ?? 0}%` }}
-                />
-              </div>
+        <h3 className="text-sm font-semibold mb-2 sticky top-0 bg-white py-2 z-10">
+          <div className="mb-1">
+            {wasEverCompleted.current || (metrics && metrics.total_calls >= performanceGoals.number_of_calls_average && 
+             metrics.overall_performance >= performanceGoals.overall_performance_goal) ? (
+              "The challenge has been completed. ✅"
+            ) : (
+              `${Math.max(0, performanceGoals.number_of_calls_average - (metrics?.total_calls || 0))} ${
+                performanceGoals.number_of_calls_average - (metrics?.total_calls || 0) === 1 ? 'call' : 'calls'
+              } left to complete the challenge.`
+            )}
+          </div>
+          <div>
+            Your score from last {metrics?.total_calls || 0} {(metrics?.total_calls || 0) === 1 ? 'call' : 'calls'}:
+          </div>
+        </h3>
+        {categories.map(({ key, label }) => (
+          <div key={key} className="bg-[#f8fdf6] p-3 rounded-lg mb-3 mr-2">
+            <div className="flex justify-between items-center mb-1">
+              <span className={`font-medium ${key === 'overall_performance' ? 'text-base' : 'text-xs'}`}>
+                {label}
+              </span>
+              <span className={`font-bold text-green-500 ${key === 'overall_performance' ? 'text-lg' : 'text-xs'}`}>
+                {(metrics?.[key as keyof PerformanceMetrics] ?? 0)}/100
+              </span>
             </div>
-          ))}
-        </div>
-<button 
-  onClick={handleRecordsClick}
-  className="w-full py-3 rounded-[20px] text-black font-semibold text-lg transition-all hover:opacity-90 hover:shadow-lg bg-white shadow-md mb-6 flex items-center justify-center gap-2"
->
-  <img 
-    src="https://res.cloudinary.com/dmbzcxhjn/image/upload/Call_Records_duha_ykcxfj.png"
-    alt="Call Records Icon"
-    width={20}
-    height={20}
-    className="object-contain"
-  />
-  Go to Call Records
-</button>
+            <div className={`bg-gray-200 rounded-full overflow-hidden ${key === 'overall_performance' ? 'h-3' : 'h-2'}`}>
+              <div 
+                className="h-full bg-green-500 rounded-full transition-all duration-300"
+                style={{ width: `${metrics?.[key as keyof PerformanceMetrics] ?? 0}%` }}
+              />
+            </div>
+          </div>
+        ))}
       </div>
-    </>
-  );
-}
+      <button 
+        onClick={handleRecordsClick}
+        className="w-full py-3 rounded-[20px] text-black font-semibold text-lg transition-all hover:opacity-90 hover:shadow-lg bg-white shadow-md mb-6 flex items-center justify-center gap-2"
+      >
+        <img 
+          src="https://res.cloudinary.com/dmbzcxhjn/image/upload/Call_Records_duha_ykcxfj.png"
+          alt="Call Records Icon"
+          width={20}
+          height={20}
+          className="object-contain"
+        />
+        Go to Call Records
+      </button>
+    </div>
+  </>
+);
