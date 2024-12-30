@@ -56,7 +56,7 @@ useEffect(() => {
       if (response.ok) {
         const { isCompleted: wasCompleted } = await response.json();
         if (wasCompleted) {
-          setIsCompleted(true);
+          setIsCompleted(true);  // This will make it show completion message forever
         }
       }
     } catch (error) {
