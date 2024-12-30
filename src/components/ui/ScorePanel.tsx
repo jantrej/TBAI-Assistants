@@ -111,9 +111,9 @@ if (wasCompleted) {
 if (!wasEverCompleted.current && !isChallengePermanentlyCompleted && 
     data.total_calls >= performanceGoals.number_of_calls_average &&
     data.overall_performance >= performanceGoals.overall_performance_goal) {
-  setIsCompleted(true);
   setIsChallengePermanentlyCompleted(true);
   wasEverCompleted.current = true;
+
         await fetch('/api/mark-challenge-complete', {
           method: 'POST',
           headers: {
