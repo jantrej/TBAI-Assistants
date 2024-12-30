@@ -299,12 +299,18 @@ if (!wasEverCompleted.current && !isCompleted) {
             </div>
           ))}
         </div>
-        <button 
-          onClick={handleRecordsClick}
-          className="w-full py-3 rounded-[20px] text-black font-semibold text-lg transition-all hover:opacity-90 hover:shadow-lg bg-white shadow-md mb-6"
-        >
-          Go to Call Records
-        </button>
+<button 
+  onClick={handleRecordsClick}
+  className="w-full py-3 rounded-[20px] text-black font-semibold text-lg transition-all hover:opacity-90 hover:shadow-lg bg-white shadow-md mb-6 flex items-center justify-center gap-2"
+>
+  <Image 
+    src="https://res.cloudinary.com/dmbzcxhjn/image/upload/Call_Records_duha_ykcxfj.png"
+    alt="Call Records Icon"
+    width={20}
+    height={20}
+  />
+  Go to Call Records
+</button>
       </div>
     </>
   );
