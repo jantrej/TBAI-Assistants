@@ -447,7 +447,7 @@ function LockedOverlay({
     />
   </div>
 
-  <div className="flex justify-between items-center mb-2">
+<div className="flex justify-between items-center mb-2">
     <span className="text-sm font-medium text-white">Number of Calls Left:</span>
     <span className="text-sm font-bold text-white">
       {Math.max(0, performanceGoals.number_of_calls_average - (characterStates[previousAssistant]?.metrics?.total_calls || 0))}
@@ -459,7 +459,7 @@ function LockedOverlay({
       style={{ width: `${(characterStates[previousAssistant]?.metrics?.total_calls || 0) / performanceGoals.number_of_calls_average * 100}%` }}
     />
   </div>
-  <div className="h-3 bg-white/20 rounded-full overflow-hidden relative">
+</div>
               <div 
                 className="h-full bg-gradient-to-r from-white to-gray-200 rounded-full transition-all duration-1000 ease-out"
                 style={{ width: `${performanceGoals.overall_performance_goal}%` }}
