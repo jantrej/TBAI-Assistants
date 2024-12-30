@@ -77,9 +77,8 @@ export function ScorePanel({
     window.top!.location.href = 'https://app.trainedbyai.com/call-records';
   };
 
-  const fetchMetrics = useCallback(async () => {
+const fetchMetrics = useCallback(async () => {
     if (!memberId || !characterName) return;
-
     try {
       const timestamp = new Date().getTime();
       const random = Math.random();
@@ -93,57 +92,31 @@ export function ScorePanel({
       
       const data = await response.json();
       
-      // If it was ever completed, just update metrics
+      // If it was ever completed, always keep completed state and metrics
       if (wasEverCompleted.current || isCompleted) {
         setMetrics(data);
+        setIsCompleted(true); // Ensure completed state is maintained
         return;
       }
 
       // Only check completion for non-completed challenges
-// ADD THIS INSTEAD
-// If it was ever completed, always keep completed state and metrics
-if (wasEverCompleted.current || isCompleted) {
-  setMetrics(data);
-  setIsCompleted(true); // Ensure completed state is maintained
-  return;
-}
-
-// Only check completion for non-completed challenges
-if (data.total_calls >= performanceGoals.number_of_calls_average) {
-  if (data.overall_performance >= performanceGoals.overall_performance_goal) {
-    setMetrics(data);
-    setIsCompleted(true);
-    wasEverCompleted.current = true;
-    await markChallengeComplete();
-  }
-} else {
-  setMetrics(data);
-}
+      if (data.total_calls >= performanceGoals.number_of_calls_average) {
+        if (data.overall_performance >= performanceGoals.overall_performance_goal) {
+          setMetrics(data);
+          setIsCompleted(true);
+          wasEverCompleted.current = true;
+          await markChallengeComplete();
+        }
+      } else {
+        setMetrics(data);
+      }
     } catch (error) {
       console.error('Error fetching metrics:', error);
     } finally {
       setIsLoading(false);
     }
   }, [memberId, characterName, performanceGoals, isCompleted]);
-
-  const markChallengeComplete = useCallback(async () => {
-    try {
-      await fetch('/api/mark-challenge-complete', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          memberId,
-          characterName,
-          teamId
-        })
-      });
-    } catch (error) {
-      console.error('Error marking challenge complete:', error);
-    }
-  }, [memberId, characterName, teamId]);
-
+  
   const resetChallenge = useCallback(async () => {
     // ADD THIS INSTEAD
 // Double-check that we never reset completed challenges
