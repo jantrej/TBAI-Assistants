@@ -115,7 +115,7 @@ const fetchMetrics = useCallback(async () => {
     } finally {
       setIsLoading(false);
     }
-  }, [memberId, characterName, performanceGoals, isCompleted]);
+  }, [memberId, characterName, performanceGoals, isCompleted, markChallengeComplete]); // Added markChallengeComplete here
   
   const resetChallenge = useCallback(async () => {
     // ADD THIS INSTEAD
