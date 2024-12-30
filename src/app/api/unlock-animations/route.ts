@@ -13,7 +13,6 @@ export async function OPTIONS() {
   return NextResponse.json({}, { headers: corsHeaders() });
 }
 
-// Check if animation has been shown and unlock status
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -33,24 +32,46 @@ export async function GET(request: Request) {
 
     const { rows } = await pool.sql`
       SELECT 
-        EXISTS (
-          SELECT 1 
-          FROM unlock_animations_shown 
-          WHERE member_id = ${memberId} 
-          AND character_name = ${characterName}
-        ) as shown,
-        EXISTS (
-          SELECT 1 
-          FROM unlock_animations_shown 
-          WHERE member_id = ${memberId} 
-          AND character_name = ${characterName}
-          AND unlocked = true
-        ) as unlocked;
+        ua.shown,
+        ua.unlocked,
+        ua.completed_at,
+        cm.overall_performance as completion_performance,
+        cm.total_calls as completion_calls
+      FROM (
+        SELECT 
+          EXISTS (
+            SELECT 1 
+            FROM unlock_animations_shown 
+            WHERE member_id = ${memberId} 
+            AND character_name = ${characterName}
+          ) as shown,
+          EXISTS (
+            SELECT 1 
+            FROM unlock_animations_shown 
+            WHERE member_id = ${memberId} 
+            AND character_name = ${characterName}
+            AND unlocked = true
+          ) as unlocked,
+          completed_at
+        FROM unlock_animations_shown
+        WHERE member_id = ${memberId} 
+        AND character_name = ${characterName}
+      ) ua
+      LEFT JOIN completion_metrics cm ON 
+        cm.member_id = ${memberId} 
+        AND cm.character_name = ${characterName};
     `;
+
+    const completionMetrics = rows[0].completion_performance ? {
+      overall_performance: rows[0].completion_performance,
+      total_calls: rows[0].completion_calls
+    } : null;
 
     return NextResponse.json({ 
       shown: rows[0].shown,
-      unlocked: rows[0].unlocked
+      unlocked: rows[0].unlocked,
+      completedAt: rows[0].completed_at,
+      completionMetrics
     }, { headers: corsHeaders() });
   } catch (error) {
     console.error('Error checking animation status:', error);
@@ -61,11 +82,10 @@ export async function GET(request: Request) {
   }
 }
 
-// Record that animation has been shown and character is unlocked
 export async function POST(request: Request) {
   try {
-    const { memberId, characterName } = await request.json();
-
+    const { memberId, characterName, completionMetrics } = await request.json();
+    
     if (!memberId || !characterName) {
       return NextResponse.json(
         { error: 'Member ID and character name are required' },
@@ -77,14 +97,46 @@ export async function POST(request: Request) {
       connectionString: process.env.visionboard_PRISMA_URL
     });
 
-    await pool.sql`
-      INSERT INTO unlock_animations_shown (member_id, character_name, unlocked)
-      VALUES (${memberId}, ${characterName}, true)
-      ON CONFLICT (member_id, character_name) 
-      DO UPDATE SET unlocked = true;
-    `;
+    // Begin transaction
+    await pool.sql`BEGIN`;
 
-    return NextResponse.json({ success: true }, { headers: corsHeaders() });
+    try {
+      // Update unlock status
+      await pool.sql`
+        INSERT INTO unlock_animations_shown (member_id, character_name, unlocked, completed_at)
+        VALUES (${memberId}, ${characterName}, true, NOW())
+        ON CONFLICT (member_id, character_name) 
+        DO UPDATE SET 
+          unlocked = true,
+          completed_at = EXCLUDED.completed_at;
+      `;
+
+      // Store completion metrics if provided
+      if (completionMetrics) {
+        await pool.sql`
+          INSERT INTO completion_metrics (
+            member_id, 
+            character_name, 
+            overall_performance, 
+            total_calls
+          )
+          VALUES (
+            ${memberId}, 
+            ${characterName}, 
+            ${completionMetrics.overall_performance}, 
+            ${completionMetrics.total_calls}
+          )
+          ON CONFLICT (member_id, character_name) 
+          DO NOTHING;
+        `;
+      }
+
+      await pool.sql`COMMIT`;
+      return NextResponse.json({ success: true }, { headers: corsHeaders() });
+    } catch (error) {
+      await pool.sql`ROLLBACK`;
+      throw error;
+    }
   } catch (error) {
     console.error('Error recording animation shown:', error);
     return NextResponse.json(
