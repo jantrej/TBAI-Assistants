@@ -90,6 +90,10 @@ const fetchMetrics = useCallback(async () => {
         if (wasCompleted) {
           wasEverCompleted.current = true;
           setIsCompleted(true);
+        } else {
+          // IMPORTANT: Reset wasEverCompleted if not completed
+          wasEverCompleted.current = false;
+          setIsCompleted(false);
         }
       }
 
@@ -133,12 +137,11 @@ const fetchMetrics = useCallback(async () => {
 }, [memberId, characterName, performanceGoals, teamId]);
   
 const resetChallenge = useCallback(async () => {
-  // Only prevent reset if challenge was actually completed
-  if (wasEverCompleted.current || isCompleted) {
-    console.log('Challenge was completed, skipping reset');
-    return;
-  }
-
+    // ONLY SKIP RESET IF CHALLENGE WAS ACTUALLY COMPLETED SUCCESSFULLY
+    if (wasEverCompleted.current && isCompleted) {
+      console.log('Challenge was completed successfully, skipping reset');
+      return;
+    }
   try {
     console.log('Resetting challenge...');
     const response = await fetch('/api/reset-challenge', {
