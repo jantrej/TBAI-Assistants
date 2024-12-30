@@ -44,25 +44,24 @@ const statePromises = characters.map(async (character) => {
     completionRes.json()
   ]);
 
-  return {
-    name: character.name,
-    isLocked: !unlockData.unlocked,
-    animationShown: unlockData.shown,
-    metrics: metricsData,
-    isCompleted: completionData.isCompleted
-  };
-});
+return {
+  name: character.name,
+  isLocked: !unlockData.unlocked,
+  animationShown: unlockData.shown,
+  metrics: metricsData,
+  isCompleted: false // Add this line
+};
 
         const results = await Promise.all(statePromises);
         
 // Replace the newStates initialization with:
 const newStates = results.reduce<Record<string, CharacterState>>((acc, result: CharacterStateResult) => {
-  acc[result.name] = {
-    isLocked: result.isLocked,
-    animationShown: result.animationShown,
-    metrics: result.metrics,
-    isCompleted: result.isCompleted
-  };
+acc[result.name] = {
+  isLocked: result.isLocked,
+  animationShown: result.animationShown,
+  metrics: result.metrics,
+  isCompleted: result.isCompleted
+};
   return acc;
 }, {});
         setCharacterStates(newStates);
@@ -106,7 +105,7 @@ const unlockCharacter = useCallback(async (characterName: string) => {
     console.error('Error unlocking character:', error);
   }
 }, [memberId]);
-
+  
   return {
     characterStates,
     isInitialLoad,
@@ -216,7 +215,7 @@ interface CharacterState {
   isLocked: boolean;
   animationShown: boolean;
   metrics: any;
-  isCompleted: boolean;  // Add this line
+  isCompleted: boolean;
 }
 
 // Also update CharacterStateResult interface:
@@ -225,7 +224,7 @@ interface CharacterStateResult {
   isLocked: boolean;
   animationShown: boolean;
   metrics: any;
-  isCompleted: boolean;  // Add this line
+  isCompleted: boolean;
 }
 
 const AnimatedStartButton: React.FC<AnimatedStartButtonProps> = ({ onStart, isLocked, showLockedText }) => {
