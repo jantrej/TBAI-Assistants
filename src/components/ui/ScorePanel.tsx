@@ -31,7 +31,7 @@ export function ScorePanel({
 }) {
   const [metrics, setMetrics] = useState<PerformanceMetrics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isCompleted, setIsCompleted] = useState(false);
+  const [isChallengePermanentlyCompleted, setIsChallengePermanentlyCompleted] = useState(false);
   const completionChecked = useRef(false);
   const wasEverCompleted = useRef(false);
 
@@ -108,11 +108,12 @@ const fetchMetrics = useCallback(async () => {
       setMetrics(data);
 
       // Only check new completion if not already completed
-      if (!wasEverCompleted.current && !isCompleted && 
-          data.total_calls >= performanceGoals.number_of_calls_average &&
-          data.overall_performance >= performanceGoals.overall_performance_goal) {
-        setIsCompleted(true);
-        wasEverCompleted.current = true;
+if (!wasEverCompleted.current && !isChallengePermanentlyCompleted && 
+    data.total_calls >= performanceGoals.number_of_calls_average &&
+    data.overall_performance >= performanceGoals.overall_performance_goal) {
+  setIsCompleted(true);
+  setIsChallengePermanentlyCompleted(true);
+  wasEverCompleted.current = true;
         await fetch('/api/mark-challenge-complete', {
           method: 'POST',
           headers: {
@@ -255,7 +256,7 @@ return (
       <div className="flex-grow overflow-y-auto scrollbar-thin">
         <h3 className="text-sm font-semibold mb-2 sticky top-0 bg-white py-2 z-10">
 <div className="mb-1">
-  {wasEverCompleted.current ? (
+  {isChallengePermanentlyCompleted ? (
     "The challenge has been completed. ✅"
   ) : (
     `${Math.max(0, performanceGoals.number_of_calls_average - (metrics?.total_calls || 0))} ${
