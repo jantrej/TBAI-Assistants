@@ -79,6 +79,25 @@ export function ScorePanel({
 
 const fetchMetrics = useCallback(async () => {
     if (!memberId || !characterName) return;
+
+    const markChallengeComplete = async () => {
+      try {
+        await fetch('/api/mark-challenge-complete', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            memberId,
+            characterName,
+            teamId
+          })
+        });
+      } catch (error) {
+        console.error('Error marking challenge complete:', error);
+      }
+    };
+
     try {
       const timestamp = new Date().getTime();
       const random = Math.random();
@@ -115,7 +134,7 @@ const fetchMetrics = useCallback(async () => {
     } finally {
       setIsLoading(false);
     }
-  }, [memberId, characterName, performanceGoals, isCompleted, markChallengeComplete]); // Added markChallengeComplete here
+  }, [memberId, characterName, performanceGoals, isCompleted, teamId]);
   
   const resetChallenge = useCallback(async () => {
     // ADD THIS INSTEAD
