@@ -176,7 +176,7 @@ if (!wasEverCompleted.current && !isChallengePermanentlyCompleted) {
     } catch (error) {
       console.error('Error resetting challenge:', error);
     }
-  }, [memberId, characterName, teamId, isCompleted]);
+  }, [memberId, characterName, teamId, isChallengePermanentlyCompleted]);
 
   useEffect(() => {
     fetchMetrics();
