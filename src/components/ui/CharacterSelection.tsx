@@ -411,7 +411,7 @@ function LockedOverlay({
         boxShadow: `0 0 20px ${glowColor}`
       }}
     >
-      <div className="w-[400px] h-[400px] p-6 pt-16 text-center flex flex-col items-center justify-start">
+      <div className="w-[400px] h-[350px] p-6 flex flex-col items-center justify-center">
         <div>
           <div className="flex justify-center items-center gap-4 mb-8 w-full">
             <AnimatedLock 
