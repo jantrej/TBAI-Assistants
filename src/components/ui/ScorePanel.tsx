@@ -29,9 +29,9 @@ export function ScorePanel({
     number_of_calls_average: number;
   }; 
 }) {
-  const [metrics, setMetrics] = useState<PerformanceMetrics | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isCompleted, setIsCompleted] = useState(false);
+const [metrics, setMetrics] = useState<PerformanceMetrics | null>(null);
+const [isLoading, setIsLoading] = useState(true);
+const [isCompleted, setIsCompleted] = useState(false);
   const completionChecked = useRef(false);
   const wasEverCompleted = useRef(false);
 
@@ -46,32 +46,31 @@ export function ScorePanel({
   ] as const;
 
   // Check initial completion status
-  useEffect(() => {
-    const checkInitialCompletion = async () => {
-      if (completionChecked.current || !memberId || !characterName) return;
+useEffect(() => {
+  const checkInitialCompletion = async () => {
+    if (completionChecked.current || !memberId || !characterName) return;
 
-      try {
-        const response = await fetch(
-          `/api/challenge-completion?memberId=${memberId}&characterName=${characterName}`
-        );
-        
-        if (response.ok) {
-          const { isCompleted: wasCompleted } = await response.json();
-          if (wasCompleted) {
-            setIsCompleted(true);
-            wasEverCompleted.current = true;
-          }
+    try {
+      const response = await fetch(
+        `/api/challenge-completion?memberId=${memberId}&characterName=${characterName}`
+      );
+      
+      if (response.ok) {
+        const { isCompleted: wasCompleted } = await response.json();
+        if (wasCompleted) {
+          setIsCompleted(true);
         }
-      } catch (error) {
-        console.error('Error checking completion status:', error);
-      } finally {
-        completionChecked.current = true;
       }
-    };
+    } catch (error) {
+      console.error('Error checking completion status:', error);
+    } finally {
+      completionChecked.current = true;
+    }
+  };
 
-    checkInitialCompletion();
-  }, [memberId, characterName]);
-
+  checkInitialCompletion();
+}, [memberId, characterName]);
+  
   const handleRecordsClick = (e: React.MouseEvent) => {
     e.preventDefault();
     window.top!.location.href = 'https://app.trainedbyai.com/call-records';
@@ -252,15 +251,15 @@ export function ScorePanel({
       <div className="w-full text-sm h-[320px] flex flex-col">
         <div className="flex-grow overflow-y-auto scrollbar-thin">
           <h3 className="text-sm font-semibold mb-2 sticky top-0 bg-white py-2 z-10">
-            <div className="mb-1">
-              {(wasEverCompleted.current || isCompleted) ? (
-                "The challenge has been completed. ✅"
-              ) : (
-                `${Math.max(0, performanceGoals.number_of_calls_average - (metrics?.total_calls || 0))} ${
-                  performanceGoals.number_of_calls_average - (metrics?.total_calls || 0) === 1 ? 'call' : 'calls'
-                } left to complete the challenge.`
-              )}
-            </div>
+<div className="mb-1">
+  {isCompleted ? (
+    "The challenge has been completed. ✅"
+  ) : (
+    `${Math.max(0, performanceGoals.number_of_calls_average - (metrics?.total_calls || 0))} ${
+      performanceGoals.number_of_calls_average - (metrics?.total_calls || 0) === 1 ? 'call' : 'calls'
+    } left to complete the challenge.`
+  )}
+</div>
             <div>
               Your score from last {metrics?.total_calls || 0} {(metrics?.total_calls || 0) === 1 ? 'call' : 'calls'}:
             </div>
