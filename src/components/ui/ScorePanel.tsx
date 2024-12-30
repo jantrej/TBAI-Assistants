@@ -208,71 +208,67 @@ if (!wasEverCompleted.current && !isCompleted) {
     );
   }
 
-  return (
-    <>
-      <style jsx>{`
-        .scrollbar-thin {
-          scrollbar-width: thin;
-          scrollbar-color: #f2f3f8 transparent;
-        }
-        
-        .scrollbar-thin::-webkit-scrollbar {
-          width: 2px !important;
-          display: block !important;
-        }
-        
-        .scrollbar-thin::-webkit-scrollbar-track {
-          background: transparent !important;
-          display: block !important;
-        }
-        
-        .scrollbar-thin::-webkit-scrollbar-thumb {
-          background-color: #f2f3f8 !important;
-          border-radius: 20px !important;
-          display: block !important;
-          opacity: 1 !important;
-          visibility: visible !important;
-        }
+return (
+  <>
+    <style jsx>{`
+      .scrollbar-thin {
+        scrollbar-width: thin;
+        scrollbar-color: #f2f3f8 transparent;
+      }
+      
+      .scrollbar-thin::-webkit-scrollbar {
+        width: 2px !important;
+        display: block !important;
+      }
+      
+      .scrollbar-thin::-webkit-scrollbar-track {
+        background: transparent !important;
+        display: block !important;
+      }
+      
+      .scrollbar-thin::-webkit-scrollbar-thumb {
+        background-color: #f2f3f8 !important;
+        border-radius: 20px !important;
+        display: block !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+      }
 
-        .scrollbar-thin::-webkit-scrollbar-button:single-button {
-          display: none !important;
-          height: 0 !important;
-          width: 0 !important;
-          background: none !important;
-        }
-        
-        .scrollbar-thin::-webkit-scrollbar-button:start {
-          display: none !important;
-        }
-        
-        .scrollbar-thin::-webkit-scrollbar-button:end {
-          display: none !important;
-        }
-        
-        .scrollbar-thin::-webkit-scrollbar-button:vertical:start:decrement,
-        .scrollbar-thin::-webkit-scrollbar-button:vertical:end:increment,
-        .scrollbar-thin::-webkit-scrollbar-button:vertical:start:increment,
-        .scrollbar-thin::-webkit-scrollbar-button:vertical:end:decrement {
-          display: none !important;
-        }
-      `}</style>
-      <div className="w-full text-sm h-[320px] flex flex-col">
-        <div className="flex-grow overflow-y-auto scrollbar-thin">
-          <h3 className="text-sm font-semibold mb-2 sticky top-0 bg-white py-2 z-10">
-            <div className="mb-1">
-<div className="mb-1">
-  {wasEverCompleted.current || isCompleted ? (
-    "The challenge has been completed. ✅"
-  ) : (
-    `${performanceGoals.number_of_calls_average - (metrics?.total_calls || 0)} ${
-      performanceGoals.number_of_calls_average - (metrics?.total_calls || 0) === 1 ? 'call' : 'calls'
-    } left to complete the challenge.`
-  )}
-</div>
-            <div>
-              Your score from last {metrics?.total_calls || 0} {(metrics?.total_calls || 0) === 1 ? 'call' : 'calls'}:
-            </div>
-          </h3>
+      .scrollbar-thin::-webkit-scrollbar-button:single-button {
+        display: none !important;
+      }
+      
+      .scrollbar-thin::-webkit-scrollbar-button:start {
+        display: none !important;
+      }
+      
+      .scrollbar-thin::-webkit-scrollbar-button:end {
+        display: none !important;
+      }
+      
+      .scrollbar-thin::-webkit-scrollbar-button:vertical:start:decrement,
+      .scrollbar-thin::-webkit-scrollbar-button:vertical:end:increment,
+      .scrollbar-thin::-webkit-scrollbar-button:vertical:start:increment,
+      .scrollbar-thin::-webkit-scrollbar-button:vertical:end:decrement {
+        display: none !important;
+      }
+    `}</style>
+    <div className="w-full text-sm h-[320px] flex flex-col">
+      <div className="flex-grow overflow-y-auto scrollbar-thin">
+        <h3 className="text-sm font-semibold mb-2 sticky top-0 bg-white py-2 z-10">
+          <div className="mb-1">
+            {(wasEverCompleted.current || isCompleted) ? (
+              "The challenge has been completed. ✅"
+            ) : (
+              `${Math.max(0, performanceGoals.number_of_calls_average - (metrics?.total_calls || 0))} ${
+                performanceGoals.number_of_calls_average - (metrics?.total_calls || 0) === 1 ? 'call' : 'calls'
+              } left to complete the challenge.`
+            )}
+          </div>
+          <div>
+            Your score from last {metrics?.total_calls || 0} {(metrics?.total_calls || 0) === 1 ? 'call' : 'calls'}:
+          </div>
+        </h3>
           {categories.map(({ key, label }) => (
             <div key={key} className="bg-[#f8fdf6] p-3 rounded-lg mb-3 mr-2">
               <div className="flex justify-between items-center mb-1">
