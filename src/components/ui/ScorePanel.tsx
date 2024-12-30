@@ -31,7 +31,7 @@ export function ScorePanel({
 }) {
   const [metrics, setMetrics] = useState<PerformanceMetrics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isChallengePermanentlyCompleted, setIsChallengePermanentlyCompleted] = useState(false);
+  const [isCompleted, setIsCompleted] = useState(false);
   const completionChecked = useRef(false);
   const wasEverCompleted = useRef(false);
 
@@ -57,10 +57,10 @@ export function ScorePanel({
         
         if (response.ok) {
           const { isCompleted: wasCompleted } = await response.json();
-if (wasCompleted) {
-  setIsChallengePermanentlyCompleted(true);
-  wasEverCompleted.current = true;
-}
+          if (wasCompleted) {
+            setIsCompleted(true);
+            wasEverCompleted.current = true;
+          }
         }
       } catch (error) {
         console.error('Error checking completion status:', error);
@@ -87,10 +87,10 @@ const fetchMetrics = useCallback(async () => {
       );
       if (completionRes.ok) {
         const { isCompleted: wasCompleted } = await completionRes.json();
-if (wasCompleted) {
-  setIsChallengePermanentlyCompleted(true);
-  wasEverCompleted.current = true;
-}
+        if (wasCompleted) {
+          wasEverCompleted.current = true;
+          setIsCompleted(true);
+        }
       }
 
       // Then get metrics
@@ -108,12 +108,11 @@ if (wasCompleted) {
       setMetrics(data);
 
       // Only check new completion if not already completed
-if (!wasEverCompleted.current && !isChallengePermanentlyCompleted && 
-    data.total_calls >= performanceGoals.number_of_calls_average &&
-    data.overall_performance >= performanceGoals.overall_performance_goal) {
-  setIsChallengePermanentlyCompleted(true);
-  wasEverCompleted.current = true;
-
+      if (!wasEverCompleted.current && !isCompleted && 
+          data.total_calls >= performanceGoals.number_of_calls_average &&
+          data.overall_performance >= performanceGoals.overall_performance_goal) {
+        setIsCompleted(true);
+        wasEverCompleted.current = true;
         await fetch('/api/mark-challenge-complete', {
           method: 'POST',
           headers: {
@@ -136,7 +135,7 @@ if (!wasEverCompleted.current && !isChallengePermanentlyCompleted &&
   const resetChallenge = useCallback(async () => {
     // ADD THIS INSTEAD
 // Double-check that we never reset completed challenges
-if (wasEverCompleted.current || isChallengePermanentlyCompleted) {
+if (wasEverCompleted.current || isCompleted) {
   console.log('Challenge was completed, skipping reset');
   return;
 }
@@ -161,7 +160,7 @@ if (wasEverCompleted.current || isChallengePermanentlyCompleted) {
 
 // ADD THIS INSTEAD
 // Only reset metrics if challenge was never completed
-if (!wasEverCompleted.current && !isChallengePermanentlyCompleted) {
+if (!wasEverCompleted.current && !isCompleted) {
   setMetrics({
     overall_performance: 0,
     engagement: 0,
@@ -176,7 +175,7 @@ if (!wasEverCompleted.current && !isChallengePermanentlyCompleted) {
     } catch (error) {
       console.error('Error resetting challenge:', error);
     }
-  }, [memberId, characterName, teamId, isChallengePermanentlyCompleted]);
+  }, [memberId, characterName, teamId, isCompleted]);
 
   useEffect(() => {
     fetchMetrics();
@@ -255,15 +254,15 @@ return (
     <div className="w-full text-sm h-[320px] flex flex-col">
       <div className="flex-grow overflow-y-auto scrollbar-thin">
         <h3 className="text-sm font-semibold mb-2 sticky top-0 bg-white py-2 z-10">
-<div className="mb-1">
-  {isChallengePermanentlyCompleted ? (
-    "The challenge has been completed. ✅"
-  ) : (
-    `${Math.max(0, performanceGoals.number_of_calls_average - (metrics?.total_calls || 0))} ${
-      performanceGoals.number_of_calls_average - (metrics?.total_calls || 0) === 1 ? 'call' : 'calls'
-    } left to complete the challenge.`
-  )}
-</div>
+          <div className="mb-1">
+            {(wasEverCompleted.current || isCompleted) ? (
+              "The challenge has been completed. ✅"
+            ) : (
+              `${Math.max(0, performanceGoals.number_of_calls_average - (metrics?.total_calls || 0))} ${
+                performanceGoals.number_of_calls_average - (metrics?.total_calls || 0) === 1 ? 'call' : 'calls'
+              } left to complete the challenge.`
+            )}
+          </div>
           <div>
             Your score from last {metrics?.total_calls || 0} {(metrics?.total_calls || 0) === 1 ? 'call' : 'calls'}:
           </div>
