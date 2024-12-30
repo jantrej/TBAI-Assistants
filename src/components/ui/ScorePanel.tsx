@@ -78,27 +78,27 @@ export function ScorePanel({
   };
 
 const fetchMetrics = useCallback(async () => {
-    if (!memberId || !characterName) return;
+  if (!memberId || !characterName) return;
 
-    try {
-      // First check completion status from backend
-      const completionRes = await fetch(
-        `/api/challenge-completion?memberId=${memberId}&characterName=${characterName}`
-      );
-      if (completionRes.ok) {
-        const { isCompleted: wasCompleted } = await completionRes.json();
-        if (wasCompleted) {
-          wasEverCompleted.current = true;
-          setIsCompleted(true);
-        }
+  try {
+    // First check completion status from backend
+    const completionRes = await fetch(
+      `/api/challenge-completion?memberId=${memberId}&characterName=${characterName}`
+    );
+    if (completionRes.ok) {
+      const { isCompleted: wasCompleted } = await completionRes.json();
+      if (wasCompleted) {
+        wasEverCompleted.current = true;
+        setIsCompleted(true);
       }
+    }
 
-      // Then get metrics
-      const timestamp = new Date().getTime();
-      const random = Math.random();
-      const response = await fetch(
-        `/api/character-performance?memberId=${memberId}&characterName=${characterName}&t=${timestamp}&r=${random}`
-      );
+    // Then get metrics
+    const timestamp = new Date().getTime();
+    const random = Math.random();
+    const response = await fetch(
+      `/api/character-performance?memberId=${memberId}&characterName=${characterName}&t=${timestamp}&r=${random}`
+    );
       
       if (!response.ok) {
         throw new Error(await response.text());
@@ -255,14 +255,14 @@ return (
       <div className="flex-grow overflow-y-auto scrollbar-thin">
         <h3 className="text-sm font-semibold mb-2 sticky top-0 bg-white py-2 z-10">
 <div className="mb-1">
-            {(wasEverCompleted.current || isCompleted) ? (
-              "The challenge has been completed. ✅"
-            ) : (
-              `${Math.max(0, performanceGoals.number_of_calls_average - (metrics?.total_calls || 0))} ${
-                performanceGoals.number_of_calls_average - (metrics?.total_calls || 0) === 1 ? 'call' : 'calls'
-              } left to complete the challenge.`
-            )}
-          </div>
+  {(wasEverCompleted.current || isCompleted) ? (
+    "The challenge has been completed. ✅"
+  ) : (
+    `${Math.max(0, performanceGoals.number_of_calls_average - (metrics?.total_calls || 0))} ${
+      performanceGoals.number_of_calls_average - (metrics?.total_calls || 0) === 1 ? 'call' : 'calls'
+    } left to complete the challenge.`
+  )}
+</div>
           <div>
             Your score from last {metrics?.total_calls || 0} {(metrics?.total_calls || 0) === 1 ? 'call' : 'calls'}:
           </div>
