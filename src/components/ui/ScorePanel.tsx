@@ -254,7 +254,7 @@ return (
     <div className="w-full text-sm h-[320px] flex flex-col">
       <div className="flex-grow overflow-y-auto scrollbar-thin">
         <h3 className="text-sm font-semibold mb-2 sticky top-0 bg-white py-2 z-10">
-          <div className="mb-1">
+<div className="mb-1">
             {(wasEverCompleted.current || isCompleted) ? (
               "The challenge has been completed. ✅"
             ) : (
