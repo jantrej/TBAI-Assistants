@@ -207,17 +207,19 @@ export function ScorePanel({
       `}</style>
       <div className="w-full text-sm h-[320px] flex flex-col">
         <div className="flex-grow overflow-y-auto scrollbar-thin">
-          <h3 className="text-sm font-semibold mb-2 sticky top-0 bg-white py-2 z-10">
-            <div className="mb-1">
-              {wasEverCompleted.current || (metrics && metrics.total_calls >= performanceGoals.number_of_calls_average && 
-               metrics.overall_performance >= performanceGoals.overall_performance_goal) ? (
-                "The challenge has been completed. ✅"
-              ) : (
-                `${Math.max(0, performanceGoals.number_of_calls_average - (metrics?.total_calls || 0))} ${
-                  performanceGoals.number_of_calls_average - (metrics?.total_calls || 0) === 1 ? 'call' : 'calls'
-                } left to complete the challenge.`
-              )}
-            </div>
+<h3 className="text-sm font-semibold mb-2 sticky top-0 bg-white py-2 z-10">
+  <div className="mb-1">
+    {wasEverCompleted.current || (metrics && 
+     (metrics.total_calls >= performanceGoals.number_of_calls_average && 
+      metrics.overall_performance >= performanceGoals.overall_performance_goal)) || 
+     (performanceGoals.number_of_calls_average - (metrics?.total_calls || 0) <= 0) ? (
+      "The challenge has been completed. ✅"
+    ) : (
+      `${Math.max(0, performanceGoals.number_of_calls_average - (metrics?.total_calls || 0))} ${
+        performanceGoals.number_of_calls_average - (metrics?.total_calls || 0) === 1 ? 'call' : 'calls'
+      } left to complete the challenge.`
+    )}
+  </div>
             <div>
               Your score from last {metrics?.total_calls || 0} {(metrics?.total_calls || 0) === 1 ? 'call' : 'calls'}:
             </div>
