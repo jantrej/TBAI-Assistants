@@ -364,7 +364,8 @@ function LockedOverlay({
   performanceGoals,
   showUnlockAnimation,
   onAnimationComplete,
-  characterName
+  characterName,
+  characterStates
 }: { 
   previousAssistant: string; 
   isLastLocked: boolean; 
@@ -376,6 +377,13 @@ function LockedOverlay({
   showUnlockAnimation?: boolean;
   onAnimationComplete?: () => void;
   characterName: string;
+  characterStates: {
+    [key: string]: {
+      isLocked: boolean;
+      animationShown: boolean;
+      metrics: any;
+    };
+  };
 }) {
   const glowColor = 
     difficulty === 'Easy' 
@@ -416,12 +424,22 @@ function LockedOverlay({
           <p className="text-white text-xl mb-8">
             {`Achieve Overall Performance above ${performanceGoals.overall_performance_goal} from the past ${performanceGoals.number_of_calls_average} calls on ${previousAssistant} to Unlock.`}
           </p>
-          <div className="w-full">
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-sm font-medium text-white">Overall Performance</span>
-              <span className="text-sm font-bold text-white">{performanceGoals.overall_performance_goal}/100</span>
-            </div>
-            <div className="h-3 bg-white/20 rounded-full overflow-hidden relative">
+<div className="w-full">
+  <div className="flex justify-between items-center mb-2">
+    <span className="text-sm font-medium text-white">Overall Performance Target</span>
+    <span className="text-sm font-bold text-white">{performanceGoals.overall_performance_goal}/100</span>
+  </div>
+  <div className="flex justify-between items-center mb-2">
+    <span className="text-sm font-medium text-white">Current Overall Performance:</span>
+    <span className="text-sm font-bold text-white">{characterStates[previousAssistant]?.metrics?.overall_performance || 0}/100</span>
+  </div>
+  <div className="flex justify-between items-center mb-2">
+    <span className="text-sm font-medium text-white">Number of Calls Left:</span>
+    <span className="text-sm font-bold text-white">
+      {Math.max(0, performanceGoals.number_of_calls_average - (characterStates[previousAssistant]?.metrics?.total_calls || 0))}
+    </span>
+  </div>
+  <div className="h-3 bg-white/20 rounded-full overflow-hidden relative">
               <div 
                 className="h-full bg-gradient-to-r from-white to-gray-200 rounded-full transition-all duration-1000 ease-out"
                 style={{ width: `${performanceGoals.overall_performance_goal}%` }}
@@ -813,19 +831,20 @@ return (
 
       {/* Only show LockedOverlay if character is locked */}
      {characterState?.isLocked && performanceGoals && (
-              <LockedOverlay 
-                previousAssistant={prevCharacter?.name || ''}
-                isLastLocked={index === characters.length - 1}
-                difficulty={character.difficulty}
-                performanceGoals={performanceGoals}
-                showUnlockAnimation={showUnlockAnimation}
-                onAnimationComplete={() => {
-                  if (showUnlockAnimation) {
-                    unlockCharacter(character.name);
-                  }
-                }}
-                characterName={character.name}
-              />
+<LockedOverlay 
+  previousAssistant={prevCharacter?.name || ''}
+  isLastLocked={index === characters.length - 1}
+  difficulty={character.difficulty}
+  performanceGoals={performanceGoals}
+  showUnlockAnimation={showUnlockAnimation}
+  onAnimationComplete={() => {
+    if (showUnlockAnimation) {
+      unlockCharacter(character.name);
+    }
+  }}
+  characterName={character.name}
+  characterStates={characterStates}
+/>
             )}
           </motion.div>
         );
