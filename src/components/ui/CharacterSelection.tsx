@@ -30,36 +30,41 @@ function useCharacterState(
     async function initializeCharacterStates() {
       try {
         // Fetch all character states in parallel
-        const statePromises = characters.map(async (character) => {
-          const [unlockRes, metricsRes] = await Promise.all([
-            fetch(`/api/unlock-animations?memberId=${memberId}&characterName=${character.name}`),
-            fetch(`/api/character-performance?memberId=${memberId}&characterName=${character.name}`)
-          ]);
+// Replace the existing fetch calls in initializeCharacterStates with:
+const statePromises = characters.map(async (character) => {
+  const [unlockRes, metricsRes, completionRes] = await Promise.all([
+    fetch(`/api/unlock-animations?memberId=${memberId}&characterName=${character.name}`),
+    fetch(`/api/character-performance?memberId=${memberId}&characterName=${character.name}`),
+    fetch(`/api/challenge-completion?memberId=${memberId}&characterName=${character.name}`)
+  ]);
 
-          const [unlockData, metricsData] = await Promise.all([
-            unlockRes.json(),
-            metricsRes.json()
-          ]);
+  const [unlockData, metricsData, completionData] = await Promise.all([
+    unlockRes.json(),
+    metricsRes.json(),
+    completionRes.json()
+  ]);
 
-          return {
-            name: character.name,
-            isLocked: !unlockData.unlocked,
-            animationShown: unlockData.shown,
-            metrics: metricsData
-          };
-        });
+  return {
+    name: character.name,
+    isLocked: !unlockData.unlocked,
+    animationShown: unlockData.shown,
+    metrics: metricsData,
+    isCompleted: completionData.isCompleted
+  };
+});
 
         const results = await Promise.all(statePromises);
         
-       const newStates = results.reduce<Record<string, CharacterState>>((acc, result: CharacterStateResult) => {
+// Replace the newStates initialization with:
+const newStates = results.reduce<Record<string, CharacterState>>((acc, result: CharacterStateResult) => {
   acc[result.name] = {
     isLocked: result.isLocked,
     animationShown: result.animationShown,
-    metrics: result.metrics
+    metrics: result.metrics,
+    isCompleted: result.isCompleted
   };
   return acc;
 }, {});
-
         setCharacterStates(newStates);
         setIsInitialLoad(false);
         initializationRef.current = true;
@@ -72,28 +77,35 @@ function useCharacterState(
     initializeCharacterStates();
   }, [memberId, performanceGoals]);
 
-  const unlockCharacter = useCallback(async (characterName: string) => {
-    if (!memberId) return;
+// Replace the entire unlockCharacter function with:
+const unlockCharacter = useCallback(async (characterName: string) => {
+  if (!memberId) return;
 
-    try {
-      await fetch('/api/unlock-animations', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ memberId, characterName })
-      });
+  try {
+    const completionRes = await fetch(
+      `/api/challenge-completion?memberId=${memberId}&characterName=${characterName}`
+    );
+    const { isCompleted } = await completionRes.json();
 
-      setCharacterStates(prev => ({
-        ...prev,
-        [characterName]: {
-          ...prev[characterName],
-          isLocked: false,
-          animationShown: true
-        }
-      }));
-    } catch (error) {
-      console.error('Error unlocking character:', error);
-    }
-  }, [memberId]);
+    await fetch('/api/unlock-animations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ memberId, characterName })
+    });
+
+    setCharacterStates(prev => ({
+      ...prev,
+      [characterName]: {
+        ...prev[characterName],
+        isLocked: false,
+        animationShown: true,
+        isCompleted: isCompleted || prev[characterName]?.isCompleted || false
+      }
+    }));
+  } catch (error) {
+    console.error('Error unlocking character:', error);
+  }
+}, [memberId]);
 
   return {
     characterStates,
@@ -199,18 +211,21 @@ interface AnimatedStartButtonProps {
   showLockedText?: boolean;
 }
 
+// Find this interface and replace it with:
 interface CharacterState {
   isLocked: boolean;
   animationShown: boolean;
-  metrics: any;  // You can make this more specific based on your metrics type
+  metrics: any;
+  isCompleted: boolean;  // Add this line
 }
 
-// Then define interface for the result object
+// Also update CharacterStateResult interface:
 interface CharacterStateResult {
   name: string;
   isLocked: boolean;
   animationShown: boolean;
   metrics: any;
+  isCompleted: boolean;  // Add this line
 }
 
 const AnimatedStartButton: React.FC<AnimatedStartButtonProps> = ({ onStart, isLocked, showLockedText }) => {
@@ -708,12 +723,17 @@ return (
         const prevCharacter = index > 0 ? characters[index - 1] : null;
         const prevCharacterState = prevCharacter ? characterStates[prevCharacter.name] : null;
 
-        let shouldBeUnlocked = index === 0;
-        if (index > 0 && prevCharacterState && prevCharacterState.metrics && performanceGoals) {
-          const meetsPerformance = prevCharacterState.metrics.overall_performance >= performanceGoals.overall_performance_goal;
-          const meetsCalls = prevCharacterState.metrics.total_calls >= performanceGoals.number_of_calls_average;
-          shouldBeUnlocked = meetsPerformance && meetsCalls;
-        }
+let shouldBeUnlocked = index === 0;
+if (index > 0 && prevCharacterState && prevCharacterState.metrics && performanceGoals) {
+  const isAlreadyCompleted = prevCharacterState.isCompleted;
+  if (isAlreadyCompleted) {
+    shouldBeUnlocked = true;
+  } else {
+    const meetsPerformance = prevCharacterState.metrics.overall_performance >= performanceGoals.overall_performance_goal;
+    const meetsCalls = prevCharacterState.metrics.total_calls >= performanceGoals.number_of_calls_average;
+    shouldBeUnlocked = meetsPerformance && meetsCalls;
+  }
+}
 
         if (shouldBeUnlocked && characterState?.isLocked && !characterState.animationShown) {
           unlockCharacter(character.name);
