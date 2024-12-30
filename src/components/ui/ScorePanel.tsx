@@ -54,9 +54,9 @@ useEffect(() => {
       );
       
       if (response.ok) {
-        const { isCompleted: wasCompleted } = await response.json();
-        if (wasCompleted) {
-          setIsCompleted(true);  // This will make it show completion message forever
+        const data = await response.json();
+        if (data.isCompleted) {
+          setIsCompleted(true);
         }
       }
     } catch (error) {
@@ -73,7 +73,7 @@ useEffect(() => {
   };
 
 const fetchMetrics = useCallback(async () => {
-    if (!memberId || !characterName || isCompleted) return;  // Skip if completed
+    if (!memberId || !characterName || isCompleted) return;  // Don't fetch if already completed
 
     try {
       const timestamp = new Date().getTime();
@@ -89,23 +89,26 @@ const fetchMetrics = useCallback(async () => {
       const data = await response.json();
       setMetrics(data);
 
-      // Check if should be completed
-      if (!isCompleted && 
-          data.total_calls >= performanceGoals.number_of_calls_average &&
+      // Mark as complete if conditions met
+      if (data.total_calls >= performanceGoals.number_of_calls_average &&
           data.overall_performance >= performanceGoals.overall_performance_goal) {
-        setIsCompleted(true);
-        await fetch('/api/mark-challenge-complete', {
+        
+        const markComplete = await fetch('/api/mark-challenge-complete', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ memberId, characterName, teamId })
+          body: JSON.stringify({ memberId, characterName })
         });
+
+        if (markComplete.ok) {
+          setIsCompleted(true);  // Only set completed if successfully marked in database
+        }
       }
     } catch (error) {
       console.error('Error fetching metrics:', error);
     } finally {
       setIsLoading(false);
     }
-}, [memberId, characterName, performanceGoals, teamId, isCompleted]);
+}, [memberId, characterName, performanceGoals, isCompleted]);
   
 const resetChallenge = useCallback(async () => {
     // Don't reset if challenge is completed
