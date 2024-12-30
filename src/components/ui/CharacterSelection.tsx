@@ -21,7 +21,11 @@ const [characterStates, setCharacterStates] = useState<{
     metrics: any | null;
     isCompleted: boolean;
   };
-}>({});
+}>({
+  Megan: { isLocked: false, animationShown: false, metrics: null, isCompleted: false },
+  David: { isLocked: true, animationShown: false, metrics: null, isCompleted: false },
+  Linda: { isLocked: true, animationShown: false, metrics: null, isCompleted: false }
+});
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const initializationRef = useRef(false);
 
@@ -724,18 +728,12 @@ return (
         const prevCharacter = index > 0 ? characters[index - 1] : null;
         const prevCharacterState = prevCharacter ? characterStates[prevCharacter.name] : null;
 
-let shouldBeUnlocked = index === 0;
-if (index > 0 && prevCharacterState && prevCharacterState.metrics && performanceGoals) {
-  const isAlreadyCompleted = prevCharacterState.isCompleted;
-  if (isAlreadyCompleted) {
-    shouldBeUnlocked = true;
-  } else {
-    const meetsPerformance = prevCharacterState.metrics.overall_performance >= performanceGoals.overall_performance_goal;
-    const meetsCalls = prevCharacterState.metrics.total_calls >= performanceGoals.number_of_calls_average;
-    shouldBeUnlocked = meetsPerformance && meetsCalls;
-  }
+let shouldBeUnlocked = character.name === "Megan"; // Only Megan starts unlocked
+if (character.name === "David") {
+  shouldBeUnlocked = characterStates["Megan"]?.isCompleted;
+} else if (character.name === "Linda") {
+  shouldBeUnlocked = characterStates["David"]?.isCompleted;
 }
-
         if (shouldBeUnlocked && characterState?.isLocked && !characterState.animationShown) {
           unlockCharacter(character.name);
         }
