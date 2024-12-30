@@ -254,18 +254,18 @@ return (
     <div className="w-full text-sm h-[320px] flex flex-col">
       <div className="flex-grow overflow-y-auto scrollbar-thin">
 <h3 className="text-sm font-semibold mb-2 sticky top-0 bg-white py-2 z-10">
-  {(wasEverCompleted.current || isCompleted) && (
-    <div className="mb-1">
-      The challenge has been completed. ✅
-    </div>
-  )}
-  {!(wasEverCompleted.current || isCompleted) && (
-    <div className="mb-1">
-      {`${Math.max(0, performanceGoals.number_of_calls_average - (metrics?.total_calls || 0))} ${
-        performanceGoals.number_of_calls_average - (metrics?.total_calls || 0) === 1 ? 'call' : 'calls'
-      } left to complete the challenge.`}
-    </div>
-  )}
+  <div className="mb-1">
+    {(wasEverCompleted.current || isCompleted) ? 
+      "The challenge has been completed. ✅" 
+      : 
+      (performanceGoals.number_of_calls_average - (metrics?.total_calls || 0) > 0) ?
+        `${performanceGoals.number_of_calls_average - (metrics?.total_calls || 0)} ${
+          performanceGoals.number_of_calls_average - (metrics?.total_calls || 0) === 1 ? 'call' : 'calls'
+        } left to complete the challenge.`
+        :
+        null
+    }
+  </div>
   <div>
     Your score from last {metrics?.total_calls || 0} {(metrics?.total_calls || 0) === 1 ? 'call' : 'calls'}:
   </div>
