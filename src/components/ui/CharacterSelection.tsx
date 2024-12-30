@@ -31,25 +31,27 @@ useEffect(() => {
   async function initializeCharacterStates() {
     try {
       // Fetch all character states in parallel
-      const statePromises = characters.map(async (character) => {
-        const [unlockRes, metricsRes] = await Promise.all([
-          fetch(`/api/unlock-animations?memberId=${memberId}&characterName=${character.name}`),
-          fetch(`/api/character-performance?memberId=${memberId}&characterName=${character.name}`)
-        ]);
+const statePromises = characters.map(async (character) => {
+  const [unlockRes, metricsRes, completionRes] = await Promise.all([
+    fetch(`/api/unlock-animations?memberId=${memberId}&characterName=${character.name}`),
+    fetch(`/api/character-performance?memberId=${memberId}&characterName=${character.name}`),
+    fetch(`/api/challenge-completion?memberId=${memberId}&characterName=${character.name}`)
+  ]);
 
-        const [unlockData, metricsData] = await Promise.all([
-          unlockRes.json(),
-          metricsRes.json()
-        ]);
+  const [unlockData, metricsData, completionData] = await Promise.all([
+    unlockRes.json(),
+    metricsRes.json(),
+    completionRes.json()
+  ]);
 
-        return {
-          name: character.name,
-          isLocked: !unlockData.unlocked,
-          animationShown: unlockData.shown,
-          metrics: metricsData,
-          isCompleted: false
-        };
-      });
+  return {
+    name: character.name,
+    isLocked: !unlockData.unlocked,
+    animationShown: unlockData.shown,
+    metrics: metricsData,
+    isCompleted: completionData.isCompleted || false
+  };
+});
 
       const results = await Promise.all(statePromises);
               
