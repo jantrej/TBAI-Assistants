@@ -729,23 +729,20 @@ return (
         const prevCharacterState = prevCharacter ? characterStates[prevCharacter.name] : null;
 
 let shouldBeUnlocked = character.name === "Megan"; // Only Megan starts unlocked
-if (character.name === "David") {
+if (character.name === "David" && performanceGoals) {  // Add performanceGoals check
   // Check both completion status and metrics for Megan
   const meganState = characterStates["Megan"];
   shouldBeUnlocked = meganState?.isCompleted || 
     (meganState?.metrics && 
      meganState.metrics.overall_performance >= performanceGoals.overall_performance_goal &&
      meganState.metrics.total_calls >= performanceGoals.number_of_calls_average);
-} else if (character.name === "Linda") {
+} else if (character.name === "Linda" && performanceGoals) {  // Add performanceGoals check
   const davidState = characterStates["David"];
   shouldBeUnlocked = davidState?.isCompleted || 
     (davidState?.metrics && 
      davidState.metrics.overall_performance >= performanceGoals.overall_performance_goal &&
      davidState.metrics.total_calls >= performanceGoals.number_of_calls_average);
 }
-        if (shouldBeUnlocked && characterState?.isLocked && !characterState.animationShown) {
-          unlockCharacter(character.name);
-        }
 
         const showUnlockAnimation = shouldBeUnlocked && characterState?.isLocked && !characterState.animationShown;
 
