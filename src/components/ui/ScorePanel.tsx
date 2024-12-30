@@ -32,8 +32,6 @@ export function ScorePanel({
 const [metrics, setMetrics] = useState<PerformanceMetrics | null>(null);
 const [isLoading, setIsLoading] = useState(true);
 const [isCompleted, setIsCompleted] = useState(false);
-  const completionChecked = useRef(false);
-  const wasEverCompleted = useRef(false);
 
   const categories = [
     { key: 'overall_performance', label: 'Overall Performance' },
@@ -47,8 +45,8 @@ const [isCompleted, setIsCompleted] = useState(false);
 
   // Check initial completion status
 useEffect(() => {
-  const checkInitialCompletion = async () => {
-    if (completionChecked.current || !memberId || !characterName) return;
+  const checkCompletion = async () => {
+    if (!memberId || !characterName) return;
 
     try {
       const response = await fetch(
@@ -63,12 +61,10 @@ useEffect(() => {
       }
     } catch (error) {
       console.error('Error checking completion status:', error);
-    } finally {
-      completionChecked.current = true;
     }
   };
 
-  checkInitialCompletion();
+  checkCompletion();
 }, [memberId, characterName]);
   
   const handleRecordsClick = (e: React.MouseEvent) => {
@@ -76,23 +72,10 @@ useEffect(() => {
     window.top!.location.href = 'https://app.trainedbyai.com/call-records';
   };
 
-  const fetchMetrics = useCallback(async () => {
+ const fetchMetrics = useCallback(async () => {
     if (!memberId || !characterName) return;
 
     try {
-      // First check completion status from backend
-      const completionRes = await fetch(
-        `/api/challenge-completion?memberId=${memberId}&characterName=${characterName}`
-      );
-      if (completionRes.ok) {
-        const { isCompleted: wasCompleted } = await completionRes.json();
-        if (wasCompleted) {
-          wasEverCompleted.current = true;
-          setIsCompleted(true);
-        }
-      }
-
-      // Then get metrics
       const timestamp = new Date().getTime();
       const random = Math.random();
       const response = await fetch(
@@ -106,12 +89,10 @@ useEffect(() => {
       const data = await response.json();
       setMetrics(data);
 
-      // Only check new completion if not already completed
-      if (!wasEverCompleted.current && !isCompleted && 
+      if (!isCompleted && 
           data.total_calls >= performanceGoals.number_of_calls_average &&
           data.overall_performance >= performanceGoals.overall_performance_goal) {
         setIsCompleted(true);
-        wasEverCompleted.current = true;
         await fetch('/api/mark-challenge-complete', {
           method: 'POST',
           headers: {
