@@ -51,17 +51,17 @@ export function ScorePanel({
       if (completionChecked.current || !memberId || !characterName) return;
 
       try {
-        const response = await fetch(
-          `/api/challenge-completion?memberId=${memberId}&characterName=${characterName}`
-        );
-        
-        if (response.ok) {
-          const { isCompleted: wasCompleted } = await response.json();
-          if (wasCompleted) {
-            setIsCompleted(true);
-            wasEverCompleted.current = true;
-          }
-        }
+const completionRes = await fetch(
+  `/api/challenge-completion?memberId=${memberId}&characterName=${characterName}`
+);
+if (completionRes.ok) {
+  const { isCompleted: wasCompleted } = await completionRes.json();
+  console.log('Completion check response:', { wasCompleted, memberId, characterName });
+  if (wasCompleted) {
+    wasEverCompleted.current = true;
+    setIsCompleted(true);
+  }
+}
       } catch (error) {
         console.error('Error checking completion status:', error);
       } finally {
@@ -255,9 +255,23 @@ return (
       <div className="flex-grow overflow-y-auto scrollbar-thin">
 <h3 className="text-sm font-semibold mb-2 sticky top-0 bg-white py-2 z-10">
   <div className="mb-1">
-    {(wasEverCompleted.current || isCompleted || 
-      (metrics && metrics.total_calls >= performanceGoals.number_of_calls_average && 
-       metrics.overall_performance >= performanceGoals.overall_performance_goal)) ? (
+    {console.log('Debug state:', {
+      wasEverCompleted: wasEverCompleted.current,
+      isCompleted,
+      metrics: metrics ? {
+        total_calls: metrics.total_calls,
+        overall_performance: metrics.overall_performance
+      } : null,
+      performanceGoals,
+      meetsGoals: metrics && 
+        metrics.total_calls >= performanceGoals.number_of_calls_average && 
+        metrics.overall_performance >= performanceGoals.overall_performance_goal
+    })}
+    {wasEverCompleted.current ? (
+      "The challenge has been completed. ✅"
+    ) : metrics && 
+        metrics.total_calls >= performanceGoals.number_of_calls_average && 
+        metrics.overall_performance >= performanceGoals.overall_performance_goal ? (
       "The challenge has been completed. ✅"
     ) : (
       `${Math.max(0, performanceGoals.number_of_calls_average - (metrics?.total_calls || 0))} ${
@@ -265,10 +279,10 @@ return (
       } left to complete the challenge.`
     )}
   </div>
-          <div>
-            Your score from last {metrics?.total_calls || 0} {(metrics?.total_calls || 0) === 1 ? 'call' : 'calls'}:
-          </div>
-        </h3>
+  <div>
+    Your score from last {metrics?.total_calls || 0} {(metrics?.total_calls || 0) === 1 ? 'call' : 'calls'}:
+  </div>
+</h3>
           {categories.map(({ key, label }) => (
             <div key={key} className="bg-[#f8fdf6] p-3 rounded-lg mb-3 mr-2">
               <div className="flex justify-between items-center mb-1">
