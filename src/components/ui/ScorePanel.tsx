@@ -87,10 +87,10 @@ const fetchMetrics = useCallback(async () => {
       );
       if (completionRes.ok) {
         const { isCompleted: wasCompleted } = await completionRes.json();
-        if (wasCompleted) {
-          wasEverCompleted.current = true;
-          setIsCompleted(true);
-        }
+if (wasCompleted) {
+  setIsChallengePermanentlyCompleted(true);
+  wasEverCompleted.current = true;
+}
       }
 
       // Then get metrics
