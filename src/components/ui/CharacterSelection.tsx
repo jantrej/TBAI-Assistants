@@ -21,11 +21,7 @@ const [characterStates, setCharacterStates] = useState<{
     metrics: any | null;
     isCompleted: boolean;
   };
-}>({
-  Megan: { isLocked: false, animationShown: false, metrics: null, isCompleted: false },
-  David: { isLocked: true, animationShown: false, metrics: null, isCompleted: false },
-  Linda: { isLocked: true, animationShown: false, metrics: null, isCompleted: false }
-});
+}>({});
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const initializationRef = useRef(false);
 
@@ -728,21 +724,21 @@ return (
         const prevCharacter = index > 0 ? characters[index - 1] : null;
         const prevCharacterState = prevCharacter ? characterStates[prevCharacter.name] : null;
 
-let shouldBeUnlocked = character.name === "Megan"; // Only Megan starts unlocked
-if (character.name === "David" && performanceGoals) {  // Add performanceGoals check
-  // Check both completion status and metrics for Megan
-  const meganState = characterStates["Megan"];
-  shouldBeUnlocked = meganState?.isCompleted || 
-    (meganState?.metrics && 
-     meganState.metrics.overall_performance >= performanceGoals.overall_performance_goal &&
-     meganState.metrics.total_calls >= performanceGoals.number_of_calls_average);
-} else if (character.name === "Linda" && performanceGoals) {  // Add performanceGoals check
-  const davidState = characterStates["David"];
-  shouldBeUnlocked = davidState?.isCompleted || 
-    (davidState?.metrics && 
-     davidState.metrics.overall_performance >= performanceGoals.overall_performance_goal &&
-     davidState.metrics.total_calls >= performanceGoals.number_of_calls_average);
+let shouldBeUnlocked = index === 0;
+if (index > 0 && prevCharacterState && prevCharacterState.metrics && performanceGoals) {
+  const isAlreadyCompleted = prevCharacterState.isCompleted;
+  if (isAlreadyCompleted) {
+    shouldBeUnlocked = true;
+  } else {
+    const meetsPerformance = prevCharacterState.metrics.overall_performance >= performanceGoals.overall_performance_goal;
+    const meetsCalls = prevCharacterState.metrics.total_calls >= performanceGoals.number_of_calls_average;
+    shouldBeUnlocked = meetsPerformance && meetsCalls;
+  }
 }
+
+        if (shouldBeUnlocked && characterState?.isLocked && !characterState.animationShown) {
+          unlockCharacter(character.name);
+        }
 
         const showUnlockAnimation = shouldBeUnlocked && characterState?.isLocked && !characterState.animationShown;
 
