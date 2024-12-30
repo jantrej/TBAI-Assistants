@@ -132,50 +132,46 @@ const fetchMetrics = useCallback(async () => {
     }
 }, [memberId, characterName, performanceGoals, teamId]);
   
-  const resetChallenge = useCallback(async () => {
-    // ADD THIS INSTEAD
-// Double-check that we never reset completed challenges
-if (wasEverCompleted.current || isCompleted) {
-  console.log('Challenge was completed, skipping reset');
-  return;
-}
+const resetChallenge = useCallback(async () => {
+  // Only prevent reset if challenge was actually completed
+  if (wasEverCompleted.current || isCompleted) {
+    console.log('Challenge was completed, skipping reset');
+    return;
+  }
 
-    try {
-      console.log('Resetting challenge...');
-      const response = await fetch('/api/reset-challenge', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          memberId,
-          characterName,
-          teamId
-        })
-      });
+  try {
+    console.log('Resetting challenge...');
+    const response = await fetch('/api/reset-challenge', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        memberId,
+        characterName,
+        teamId
+      })
+    });
 
-      if (!response.ok) {
-        throw new Error('Failed to reset challenge');
-      }
-
-// ADD THIS INSTEAD
-// Only reset metrics if challenge was never completed
-if (!wasEverCompleted.current && !isCompleted) {
-  setMetrics({
-    overall_performance: 0,
-    engagement: 0,
-    objection_handling: 0,
-    information_gathering: 0,
-    program_explanation: 0,
-    closing_skills: 0,
-    overall_effectiveness: 0,
-    total_calls: 0
-  });
-}
-    } catch (error) {
-      console.error('Error resetting challenge:', error);
+    if (!response.ok) {
+      throw new Error('Failed to reset challenge');
     }
-  }, [memberId, characterName, teamId, isCompleted]);
+
+    // Reset metrics only if challenge was never completed
+    setMetrics({
+      overall_performance: 0,
+      engagement: 0,
+      objection_handling: 0,
+      information_gathering: 0,
+      program_explanation: 0,
+      closing_skills: 0,
+      overall_effectiveness: 0,
+      total_calls: 0
+    });
+  } catch (error) {
+    console.error('Error resetting challenge:', error);
+  }
+}, [memberId, characterName, teamId, isCompleted]);
 
   useEffect(() => {
     fetchMetrics();
@@ -255,16 +251,14 @@ return (
       <div className="flex-grow overflow-y-auto scrollbar-thin">
 <h3 className="text-sm font-semibold mb-2 sticky top-0 bg-white py-2 z-10">
   <div className="mb-1">
-    {(wasEverCompleted.current || isCompleted) ? 
-      "The challenge has been completed. ✅" 
-      : 
-      (performanceGoals.number_of_calls_average - (metrics?.total_calls || 0) > 0) ?
-        `${performanceGoals.number_of_calls_average - (metrics?.total_calls || 0)} ${
-          performanceGoals.number_of_calls_average - (metrics?.total_calls || 0) === 1 ? 'call' : 'calls'
-        } left to complete the challenge.`
-        :
-        null
-    }
+    {(wasEverCompleted.current || isCompleted) ? (
+      "The challenge has been completed. ✅"
+    ) : (
+      // Always show remaining calls if not completed
+      `${Math.max(0, performanceGoals.number_of_calls_average - (metrics?.total_calls || 0))} ${
+        performanceGoals.number_of_calls_average - (metrics?.total_calls || 0) === 1 ? 'call' : 'calls'
+      } left to complete the challenge.`
+    )}
   </div>
   <div>
     Your score from last {metrics?.total_calls || 0} {(metrics?.total_calls || 0) === 1 ? 'call' : 'calls'}:
