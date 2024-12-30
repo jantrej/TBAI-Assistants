@@ -229,20 +229,20 @@ const resetChallenge = useCallback(async () => {
       `}</style>
       <div className="w-full text-sm h-[320px] flex flex-col">
         <div className="flex-grow overflow-y-auto scrollbar-thin">
-          <h3 className="text-sm font-semibold mb-2 sticky top-0 bg-white py-2 z-10">
-<div className="mb-1">
-  {isCompleted ? (
-    "The challenge has been completed. ✅"
-  ) : (
-    `${Math.max(0, performanceGoals.number_of_calls_average - (metrics?.total_calls || 0))} ${
-      performanceGoals.number_of_calls_average - (metrics?.total_calls || 0) === 1 ? 'call' : 'calls'
-    } left to complete the challenge.`
-  )}
-</div>
-            <div>
-              Your score from last {metrics?.total_calls || 0} {(metrics?.total_calls || 0) === 1 ? 'call' : 'calls'}:
-            </div>
-          </h3>
+<h3 className="text-sm font-semibold mb-2 sticky top-0 bg-white py-2 z-10">
+  <div className="mb-1">
+    {isCompleted ? (
+      "The challenge has been completed. ✅"
+    ) : (
+      `${Math.max(0, performanceGoals.number_of_calls_average - (metrics?.total_calls || 0))} ${
+        performanceGoals.number_of_calls_average - (metrics?.total_calls || 0) === 1 ? 'call' : 'calls'
+      } left to complete the challenge.`
+    )}
+  </div>
+  <div>
+    Your score from last {metrics?.total_calls || 0} {(metrics?.total_calls || 0) === 1 ? 'call' : 'calls'}:
+  </div>
+</h3>
           {categories.map(({ key, label }) => (
             <div key={key} className="bg-[#f8fdf6] p-3 rounded-lg mb-3 mr-2">
               <div className="flex justify-between items-center mb-1">
