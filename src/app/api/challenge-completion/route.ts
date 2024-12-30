@@ -13,19 +13,21 @@ export async function GET(req: Request) {
       );
     }
 
-    // Call your database to check if the challenge was completed
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/check_completion_status`,
-      {
-        headers: {
-          'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`
-        },
-        body: JSON.stringify({
-          member_id: memberId,
-          character_name: characterName
-        })
-      }
-    );
+// REPLACE the fetch call with:
+const response = await fetch(
+  `${process.env.NEXT_PUBLIC_SUPABASE_URL}/check_completion_status`,
+  {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`
+    },
+    body: JSON.stringify({
+      member_id: memberId,
+      character_name: characterName
+    })
+  }
+);
 
     const data = await response.json();
     return NextResponse.json({ isCompleted: Boolean(data.is_completed) });
