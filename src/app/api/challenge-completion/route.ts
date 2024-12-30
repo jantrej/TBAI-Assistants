@@ -1,11 +1,9 @@
 import { NextResponse } from 'next/server';
 
-export async function GET(req: Request) {
+export async function POST(req: Request) {  // Changed from GET to POST
   try {
-    const { searchParams } = new URL(req.url);
-    const memberId = searchParams.get('memberId');
-    const characterName = searchParams.get('characterName');
-
+    const { memberId, characterName, teamId } = await req.json();  // Get data from request body
+    
     if (!memberId || !characterName) {
       return NextResponse.json(
         { error: 'Missing required parameters' },
@@ -13,10 +11,10 @@ export async function GET(req: Request) {
       );
     }
 
-    console.log('Checking completion for:', { memberId, characterName }); // Add logging
+    console.log('Marking challenge complete for:', { memberId, characterName });
 
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/check_completion_status`,
+      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/mark_challenge_complete`,
       {
         method: 'POST',
         headers: {
@@ -25,7 +23,9 @@ export async function GET(req: Request) {
         },
         body: JSON.stringify({
           member_id: memberId,
-          character_name: characterName
+          character_name: characterName,
+          completed_at: new Date().toISOString(),
+          team_id: teamId
         })
       }
     );
@@ -35,17 +35,16 @@ export async function GET(req: Request) {
     }
 
     const data = await response.json();
-    console.log('Completion status:', data); // Add logging
-
+    
     return NextResponse.json({ 
-      isCompleted: Boolean(data.is_completed),
-      timestamp: data.completed_at, // Include completion timestamp if available
-      metrics: data.completion_metrics // Include metrics from completion if available
+      success: true,
+      isCompleted: true,
+      timestamp: data.completed_at
     });
   } catch (error) {
-    console.error('Error checking challenge completion:', error);
+    console.error('Error marking challenge complete:', error);
     return NextResponse.json(
-      { error: 'Failed to check challenge completion', details: error instanceof Error ? error.message : 'Unknown error' },
+      { error: 'Failed to mark challenge as complete', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }
