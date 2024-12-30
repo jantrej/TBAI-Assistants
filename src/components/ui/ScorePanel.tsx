@@ -255,18 +255,13 @@ return (
       <div className="flex-grow overflow-y-auto scrollbar-thin">
 <h3 className="text-sm font-semibold mb-2 sticky top-0 bg-white py-2 z-10">
   <div className="mb-1">
-    {console.log('Debug state:', {
-      wasEverCompleted: wasEverCompleted.current,
-      isCompleted,
-      metrics: metrics ? {
-        total_calls: metrics.total_calls,
-        overall_performance: metrics.overall_performance
-      } : null,
-      performanceGoals,
-      meetsGoals: metrics && 
-        metrics.total_calls >= performanceGoals.number_of_calls_average && 
-        metrics.overall_performance >= performanceGoals.overall_performance_goal
-    })}
+    {wasEverCompleted.current || metrics?.total_calls >= performanceGoals.number_of_calls_average && metrics.overall_performance >= performanceGoals.overall_performance_goal ? (
+      "The challenge has been completed. ✅"
+    ) : (
+      `${Math.max(0, performanceGoals.number_of_calls_average - (metrics?.total_calls || 0))} ${
+        performanceGoals.number_of_calls_average - (metrics?.total_calls || 0) === 1 ? 'call' : 'calls'
+      } left to complete the challenge.`
+    )}
     {wasEverCompleted.current ? (
       "The challenge has been completed. ✅"
     ) : metrics && 
