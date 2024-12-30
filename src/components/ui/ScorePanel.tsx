@@ -81,20 +81,19 @@ const fetchMetrics = useCallback(async () => {
     if (!memberId || !characterName) return;
 
     try {
-      // First, ALWAYS check if it was ever completed, before checking metrics
-      const completionResponse = await fetch(
+      // First check completion status from backend
+      const completionRes = await fetch(
         `/api/challenge-completion?memberId=${memberId}&characterName=${characterName}`
       );
-      
-      if (completionResponse.ok) {
-        const { isCompleted: wasCompleted } = await completionResponse.json();
+      if (completionRes.ok) {
+        const { isCompleted: wasCompleted } = await completionRes.json();
         if (wasCompleted) {
-          setIsCompleted(true);
           wasEverCompleted.current = true;
+          setIsCompleted(true);
         }
       }
 
-      // Then get metrics separately
+      // Then get metrics
       const timestamp = new Date().getTime();
       const random = Math.random();
       const response = await fetch(
@@ -106,33 +105,32 @@ const fetchMetrics = useCallback(async () => {
       }
       
       const data = await response.json();
-      setMetrics(data);  // Always update metrics
+      setMetrics(data);
 
-      // Only check for NEW completion if never completed before
-      if (!wasEverCompleted.current && !isCompleted) {
-        if (data.total_calls >= performanceGoals.number_of_calls_average &&
-            data.overall_performance >= performanceGoals.overall_performance_goal) {
-          setIsCompleted(true);
-          wasEverCompleted.current = true;
-          await fetch('/api/mark-challenge-complete', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              memberId,
-              characterName,
-              teamId
-            })
-          });
-        }
+      // Only check new completion if not already completed
+      if (!wasEverCompleted.current && !isCompleted && 
+          data.total_calls >= performanceGoals.number_of_calls_average &&
+          data.overall_performance >= performanceGoals.overall_performance_goal) {
+        setIsCompleted(true);
+        wasEverCompleted.current = true;
+        await fetch('/api/mark-challenge-complete', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            memberId,
+            characterName,
+            teamId
+          })
+        });
       }
     } catch (error) {
       console.error('Error fetching metrics:', error);
     } finally {
       setIsLoading(false);
     }
-}, [memberId, characterName, performanceGoals, isCompleted, teamId]);
+}, [memberId, characterName, performanceGoals, teamId]);
   
   const resetChallenge = useCallback(async () => {
     // ADD THIS INSTEAD
