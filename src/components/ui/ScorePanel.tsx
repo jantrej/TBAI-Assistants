@@ -136,7 +136,7 @@ if (!wasEverCompleted.current && !isChallengePermanentlyCompleted &&
   const resetChallenge = useCallback(async () => {
     // ADD THIS INSTEAD
 // Double-check that we never reset completed challenges
-if (wasEverCompleted.current || isCompleted) {
+if (wasEverCompleted.current || isChallengePermanentlyCompleted) {
   console.log('Challenge was completed, skipping reset');
   return;
 }
