@@ -29,9 +29,11 @@ export function ScorePanel({
     number_of_calls_average: number;
   }; 
 }) {
-const [metrics, setMetrics] = useState<PerformanceMetrics | null>(null);
-const [isLoading, setIsLoading] = useState(true);
-const [isCompleted, setIsCompleted] = useState(false);
+  const [metrics, setMetrics] = useState<PerformanceMetrics | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isCompleted, setIsCompleted] = useState(false);
+  const completionChecked = useRef(false);
+  const wasEverCompleted = useRef(false);
 
   const categories = [
     { key: 'overall_performance', label: 'Overall Performance' },
@@ -44,38 +46,54 @@ const [isCompleted, setIsCompleted] = useState(false);
   ] as const;
 
   // Check initial completion status
-useEffect(() => {
-  const checkCompletion = async () => {
-    if (!memberId || !characterName) return;
+  useEffect(() => {
+    const checkInitialCompletion = async () => {
+      if (completionChecked.current || !memberId || !characterName) return;
 
-    try {
-      const response = await fetch(
-        `/api/challenge-completion?memberId=${memberId}&characterName=${characterName}`
-      );
-      
-      if (response.ok) {
-        const data = await response.json();
-        if (data.isCompleted) {
-          setIsCompleted(true);
+      try {
+        const response = await fetch(
+          `/api/challenge-completion?memberId=${memberId}&characterName=${characterName}`
+        );
+        
+        if (response.ok) {
+          const { isCompleted: wasCompleted } = await response.json();
+          if (wasCompleted) {
+            setIsCompleted(true);
+            wasEverCompleted.current = true;
+          }
         }
+      } catch (error) {
+        console.error('Error checking completion status:', error);
+      } finally {
+        completionChecked.current = true;
       }
-    } catch (error) {
-      console.error('Error checking completion:', error);
-    }
-  };
+    };
 
-  checkCompletion();
-}, [memberId, characterName]);
-  
+    checkInitialCompletion();
+  }, [memberId, characterName]);
+
   const handleRecordsClick = (e: React.MouseEvent) => {
     e.preventDefault();
     window.top!.location.href = 'https://app.trainedbyai.com/call-records';
   };
 
 const fetchMetrics = useCallback(async () => {
-    if (!memberId || !characterName || isCompleted) return;  // Don't fetch if already completed
+    if (!memberId || !characterName) return;
 
     try {
+      // First check completion status from backend
+      const completionRes = await fetch(
+        `/api/challenge-completion?memberId=${memberId}&characterName=${characterName}`
+      );
+      if (completionRes.ok) {
+        const { isCompleted: wasCompleted } = await completionRes.json();
+        if (wasCompleted) {
+          wasEverCompleted.current = true;
+          setIsCompleted(true);
+        }
+      }
+
+      // Then get metrics
       const timestamp = new Date().getTime();
       const random = Math.random();
       const response = await fetch(
@@ -89,33 +107,38 @@ const fetchMetrics = useCallback(async () => {
       const data = await response.json();
       setMetrics(data);
 
-      // Mark as complete if conditions met
-      if (data.total_calls >= performanceGoals.number_of_calls_average &&
+      // Only check new completion if not already completed
+      if (!wasEverCompleted.current && !isCompleted && 
+          data.total_calls >= performanceGoals.number_of_calls_average &&
           data.overall_performance >= performanceGoals.overall_performance_goal) {
-        
-        const markComplete = await fetch('/api/mark-challenge-complete', {
+        setIsCompleted(true);
+        wasEverCompleted.current = true;
+        await fetch('/api/mark-challenge-complete', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ memberId, characterName })
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            memberId,
+            characterName,
+            teamId
+          })
         });
-
-        if (markComplete.ok) {
-          setIsCompleted(true);  // Only set completed if successfully marked in database
-        }
       }
     } catch (error) {
       console.error('Error fetching metrics:', error);
     } finally {
       setIsLoading(false);
     }
-}, [memberId, characterName, performanceGoals, isCompleted]);
+}, [memberId, characterName, performanceGoals, teamId]);
   
-const resetChallenge = useCallback(async () => {
-    // Don't reset if challenge is completed
-    if (isCompleted) {
-      console.log('Challenge was completed, skipping reset');
-      return;
-    }
+  const resetChallenge = useCallback(async () => {
+    // ADD THIS INSTEAD
+// Double-check that we never reset completed challenges
+if (wasEverCompleted.current || isCompleted) {
+  console.log('Challenge was completed, skipping reset');
+  return;
+}
 
     try {
       console.log('Resetting challenge...');
@@ -135,23 +158,24 @@ const resetChallenge = useCallback(async () => {
         throw new Error('Failed to reset challenge');
       }
 
-      // Only reset metrics if not completed
-      if (!isCompleted) {
-        setMetrics({
-          overall_performance: 0,
-          engagement: 0,
-          objection_handling: 0,
-          information_gathering: 0,
-          program_explanation: 0,
-          closing_skills: 0,
-          overall_effectiveness: 0,
-          total_calls: 0
-        });
-      }
+// ADD THIS INSTEAD
+// Only reset metrics if challenge was never completed
+if (!wasEverCompleted.current && !isCompleted) {
+  setMetrics({
+    overall_performance: 0,
+    engagement: 0,
+    objection_handling: 0,
+    information_gathering: 0,
+    program_explanation: 0,
+    closing_skills: 0,
+    overall_effectiveness: 0,
+    total_calls: 0
+  });
+}
     } catch (error) {
       console.error('Error resetting challenge:', error);
     }
-}, [memberId, characterName, teamId, isCompleted]);
+  }, [memberId, characterName, teamId, isCompleted]);
 
   useEffect(() => {
     fetchMetrics();
@@ -182,67 +206,67 @@ const resetChallenge = useCallback(async () => {
     );
   }
 
-  return (
-    <>
-      <style jsx>{`
-        .scrollbar-thin {
-          scrollbar-width: thin;
-          scrollbar-color: #f2f3f8 transparent;
-        }
-        
-        .scrollbar-thin::-webkit-scrollbar {
-          width: 2px !important;
-          display: block !important;
-        }
-        
-        .scrollbar-thin::-webkit-scrollbar-track {
-          background: transparent !important;
-          display: block !important;
-        }
-        
-        .scrollbar-thin::-webkit-scrollbar-thumb {
-          background-color: #f2f3f8 !important;
-          border-radius: 20px !important;
-          display: block !important;
-          opacity: 1 !important;
-          visibility: visible !important;
-        }
+return (
+  <>
+    <style jsx>{`
+      .scrollbar-thin {
+        scrollbar-width: thin;
+        scrollbar-color: #f2f3f8 transparent;
+      }
+      
+      .scrollbar-thin::-webkit-scrollbar {
+        width: 2px !important;
+        display: block !important;
+      }
+      
+      .scrollbar-thin::-webkit-scrollbar-track {
+        background: transparent !important;
+        display: block !important;
+      }
+      
+      .scrollbar-thin::-webkit-scrollbar-thumb {
+        background-color: #f2f3f8 !important;
+        border-radius: 20px !important;
+        display: block !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+      }
 
-        .scrollbar-thin::-webkit-scrollbar-button:single-button {
-          display: none !important;
-        }
-        
-        .scrollbar-thin::-webkit-scrollbar-button:start {
-          display: none !important;
-        }
-        
-        .scrollbar-thin::-webkit-scrollbar-button:end {
-          display: none !important;
-        }
-        
-        .scrollbar-thin::-webkit-scrollbar-button:vertical:start:decrement,
-        .scrollbar-thin::-webkit-scrollbar-button:vertical:end:increment,
-        .scrollbar-thin::-webkit-scrollbar-button:vertical:start:increment,
-        .scrollbar-thin::-webkit-scrollbar-button:vertical:end:decrement {
-          display: none !important;
-        }
-      `}</style>
-      <div className="w-full text-sm h-[320px] flex flex-col">
-        <div className="flex-grow overflow-y-auto scrollbar-thin">
-<h3 className="text-sm font-semibold mb-2 sticky top-0 bg-white py-2 z-10">
-  <div className="mb-1">
-    {isCompleted ? (
-      "The challenge has been completed. ✅"
-    ) : (
-      `${Math.max(0, performanceGoals.number_of_calls_average - (metrics?.total_calls || 0))} ${
-        performanceGoals.number_of_calls_average - (metrics?.total_calls || 0) === 1 ? 'call' : 'calls'
-      } left to complete the challenge.`
-    )}
-  </div>
-  <div>
-    Your score from last {metrics?.total_calls || 0} {(metrics?.total_calls || 0) === 1 ? 'call' : 'calls'}:
-  </div>
-</h3>
+      .scrollbar-thin::-webkit-scrollbar-button:single-button {
+        display: none !important;
+      }
+      
+      .scrollbar-thin::-webkit-scrollbar-button:start {
+        display: none !important;
+      }
+      
+      .scrollbar-thin::-webkit-scrollbar-button:end {
+        display: none !important;
+      }
+      
+      .scrollbar-thin::-webkit-scrollbar-button:vertical:start:decrement,
+      .scrollbar-thin::-webkit-scrollbar-button:vertical:end:increment,
+      .scrollbar-thin::-webkit-scrollbar-button:vertical:start:increment,
+      .scrollbar-thin::-webkit-scrollbar-button:vertical:end:decrement {
+        display: none !important;
+      }
+    `}</style>
+    <div className="w-full text-sm h-[320px] flex flex-col">
+      <div className="flex-grow overflow-y-auto scrollbar-thin">
+        <h3 className="text-sm font-semibold mb-2 sticky top-0 bg-white py-2 z-10">
+          <div className="mb-1">
+            {(wasEverCompleted.current || isCompleted) ? (
+              "The challenge has been completed. ✅"
+            ) : (
+              `${Math.max(0, performanceGoals.number_of_calls_average - (metrics?.total_calls || 0))} ${
+                performanceGoals.number_of_calls_average - (metrics?.total_calls || 0) === 1 ? 'call' : 'calls'
+              } left to complete the challenge.`
+            )}
+          </div>
+          <div>
+            Your score from last {metrics?.total_calls || 0} {(metrics?.total_calls || 0) === 1 ? 'call' : 'calls'}:
+          </div>
+        </h3>
           {categories.map(({ key, label }) => (
             <div key={key} className="bg-[#f8fdf6] p-3 rounded-lg mb-3 mr-2">
               <div className="flex justify-between items-center mb-1">
@@ -262,19 +286,19 @@ const resetChallenge = useCallback(async () => {
             </div>
           ))}
         </div>
-        <button 
-          onClick={handleRecordsClick}
-          className="w-full py-3 rounded-[20px] text-black font-semibold text-lg transition-all hover:opacity-90 hover:shadow-lg bg-white shadow-md mb-6 flex items-center justify-center gap-2"
-        >
-          <img 
-            src="https://res.cloudinary.com/dmbzcxhjn/image/upload/Call_Records_duha_ykcxfj.png"
-            alt="Call Records Icon"
-            width={20}
-            height={20}
-            className="object-contain"
-          />
-          Go to Call Records
-        </button>
+<button 
+  onClick={handleRecordsClick}
+  className="w-full py-3 rounded-[20px] text-black font-semibold text-lg transition-all hover:opacity-90 hover:shadow-lg bg-white shadow-md mb-6 flex items-center justify-center gap-2"
+>
+  <img 
+    src="https://res.cloudinary.com/dmbzcxhjn/image/upload/Call_Records_duha_ykcxfj.png"
+    alt="Call Records Icon"
+    width={20}
+    height={20}
+    className="object-contain"
+  />
+  Go to Call Records
+</button>
       </div>
     </>
   );
