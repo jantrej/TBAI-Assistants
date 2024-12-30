@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import type { StaticImageData } from "next/image"
+const Image = require("next/image").default
 
 interface PerformanceMetrics {
   overall_performance: number;
@@ -303,11 +305,12 @@ if (!wasEverCompleted.current && !isCompleted) {
   onClick={handleRecordsClick}
   className="w-full py-3 rounded-[20px] text-black font-semibold text-lg transition-all hover:opacity-90 hover:shadow-lg bg-white shadow-md mb-6 flex items-center justify-center gap-2"
 >
-  <Image 
+  <img 
     src="https://res.cloudinary.com/dmbzcxhjn/image/upload/Call_Records_duha_ykcxfj.png"
     alt="Call Records Icon"
     width={20}
     height={20}
+    className="object-contain"
   />
   Go to Call Records
 </button>
