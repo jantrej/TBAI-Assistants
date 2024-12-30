@@ -161,7 +161,7 @@ if (wasEverCompleted.current || isChallengePermanentlyCompleted) {
 
 // ADD THIS INSTEAD
 // Only reset metrics if challenge was never completed
-if (!wasEverCompleted.current && !isCompleted) {
+if (!wasEverCompleted.current && !isChallengePermanentlyCompleted) {
   setMetrics({
     overall_performance: 0,
     engagement: 0,
