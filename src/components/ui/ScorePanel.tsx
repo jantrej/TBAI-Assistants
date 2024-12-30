@@ -57,10 +57,10 @@ export function ScorePanel({
         
         if (response.ok) {
           const { isCompleted: wasCompleted } = await response.json();
-          if (wasCompleted) {
-            setIsCompleted(true);
-            wasEverCompleted.current = true;
-          }
+if (wasCompleted) {
+  setIsChallengePermanentlyCompleted(true);
+  wasEverCompleted.current = true;
+}
         }
       } catch (error) {
         console.error('Error checking completion status:', error);
