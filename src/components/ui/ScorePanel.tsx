@@ -32,6 +32,7 @@ export function ScorePanel({
 const [metrics, setMetrics] = useState<PerformanceMetrics | null>(null);
 const [isLoading, setIsLoading] = useState(true);
 const [isCompleted, setIsCompleted] = useState(false);
+const wasEverCompleted = useRef(false);
 
   const categories = [
     { key: 'overall_performance', label: 'Overall Performance' },
@@ -112,9 +113,9 @@ useEffect(() => {
     }
   }, [memberId, characterName, performanceGoals, teamId, isCompleted]);
   
-  const resetChallenge = useCallback(async () => {
-    // Double-check that we never reset completed challenges
-    if (wasEverCompleted.current || isCompleted) {
+const resetChallenge = useCallback(async () => {
+    // Don't reset if challenge is completed
+    if (isCompleted) {
       console.log('Challenge was completed, skipping reset');
       return;
     }
@@ -137,8 +138,8 @@ useEffect(() => {
         throw new Error('Failed to reset challenge');
       }
 
-      // Only reset metrics if challenge was never completed
-      if (!wasEverCompleted.current && !isCompleted) {
+      // Only reset metrics if not completed
+      if (!isCompleted) {
         setMetrics({
           overall_performance: 0,
           engagement: 0,
@@ -153,7 +154,7 @@ useEffect(() => {
     } catch (error) {
       console.error('Error resetting challenge:', error);
     }
-  }, [memberId, characterName, teamId, isCompleted]);
+}, [memberId, characterName, teamId, isCompleted]);
 
   useEffect(() => {
     fetchMetrics();
