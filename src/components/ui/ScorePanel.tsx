@@ -98,18 +98,25 @@ export function ScorePanel({
       }
 
       // Only check completion for non-completed challenges
-      if (data.total_calls >= performanceGoals.number_of_calls_average) {
-        if (data.overall_performance >= performanceGoals.overall_performance_goal) {
-          setMetrics(data);
-          setIsCompleted(true);
-          wasEverCompleted.current = true;
-          await markChallengeComplete();
-        } else {
-          await resetChallenge();
-        }
-      } else {
-        setMetrics(data);
-      }
+// ADD THIS INSTEAD
+// If it was ever completed, always keep completed state and metrics
+if (wasEverCompleted.current || isCompleted) {
+  setMetrics(data);
+  setIsCompleted(true); // Ensure completed state is maintained
+  return;
+}
+
+// Only check completion for non-completed challenges
+if (data.total_calls >= performanceGoals.number_of_calls_average) {
+  if (data.overall_performance >= performanceGoals.overall_performance_goal) {
+    setMetrics(data);
+    setIsCompleted(true);
+    wasEverCompleted.current = true;
+    await markChallengeComplete();
+  }
+} else {
+  setMetrics(data);
+}
     } catch (error) {
       console.error('Error fetching metrics:', error);
     } finally {
@@ -136,7 +143,12 @@ export function ScorePanel({
   }, [memberId, characterName, teamId]);
 
   const resetChallenge = useCallback(async () => {
-    if (wasEverCompleted.current || isCompleted) return;
+    // ADD THIS INSTEAD
+// Double-check that we never reset completed challenges
+if (wasEverCompleted.current || isCompleted) {
+  console.log('Challenge was completed, skipping reset');
+  return;
+}
 
     try {
       console.log('Resetting challenge...');
@@ -156,16 +168,20 @@ export function ScorePanel({
         throw new Error('Failed to reset challenge');
       }
 
-      setMetrics({
-        overall_performance: 0,
-        engagement: 0,
-        objection_handling: 0,
-        information_gathering: 0,
-        program_explanation: 0,
-        closing_skills: 0,
-        overall_effectiveness: 0,
-        total_calls: 0
-      });
+// ADD THIS INSTEAD
+// Only reset metrics if challenge was never completed
+if (!wasEverCompleted.current && !isCompleted) {
+  setMetrics({
+    overall_performance: 0,
+    engagement: 0,
+    objection_handling: 0,
+    information_gathering: 0,
+    program_explanation: 0,
+    closing_skills: 0,
+    overall_effectiveness: 0,
+    total_calls: 0
+  });
+}
     } catch (error) {
       console.error('Error resetting challenge:', error);
     }
