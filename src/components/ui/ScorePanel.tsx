@@ -91,9 +91,20 @@ const fetchMetrics = useCallback(async () => {
           wasEverCompleted.current = true;
           setIsCompleted(true);
         } else {
-          // IMPORTANT: Reset wasEverCompleted if not completed
+          // FULL RESET when not completed
           wasEverCompleted.current = false;
           setIsCompleted(false);
+          setMetrics({
+            overall_performance: 0,
+            engagement: 0,
+            objection_handling: 0,
+            information_gathering: 0,
+            program_explanation: 0,
+            closing_skills: 0,
+            overall_effectiveness: 0,
+            total_calls: 0
+          });
+          return; // Exit early to prevent fetching new metrics
         }
       }
 
@@ -137,43 +148,49 @@ const fetchMetrics = useCallback(async () => {
 }, [memberId, characterName, performanceGoals, teamId]);
   
 const resetChallenge = useCallback(async () => {
-    // ONLY SKIP RESET IF CHALLENGE WAS ACTUALLY COMPLETED SUCCESSFULLY
+    // Only skip if successfully completed
     if (wasEverCompleted.current && isCompleted) {
       console.log('Challenge was completed successfully, skipping reset');
       return;
     }
-  try {
-    console.log('Resetting challenge...');
-    const response = await fetch('/api/reset-challenge', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        memberId,
-        characterName,
-        teamId
-      })
-    });
 
-    if (!response.ok) {
-      throw new Error('Failed to reset challenge');
+    try {
+      console.log('Resetting challenge...');
+      const response = await fetch('/api/reset-challenge', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          memberId,
+          characterName,
+          teamId
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to reset challenge');
+      }
+
+      // FULL RESET of all states
+      setMetrics({
+        overall_performance: 0,
+        engagement: 0,
+        objection_handling: 0,
+        information_gathering: 0,
+        program_explanation: 0,
+        closing_skills: 0,
+        overall_effectiveness: 0,
+        total_calls: 0
+      });
+      
+      // Reset completion status
+      wasEverCompleted.current = false;
+      setIsCompleted(false);
+      
+    } catch (error) {
+      console.error('Error resetting challenge:', error);
     }
-
-    // Reset metrics only if challenge was never completed
-    setMetrics({
-      overall_performance: 0,
-      engagement: 0,
-      objection_handling: 0,
-      information_gathering: 0,
-      program_explanation: 0,
-      closing_skills: 0,
-      overall_effectiveness: 0,
-      total_calls: 0
-    });
-  } catch (error) {
-    console.error('Error resetting challenge:', error);
-  }
 }, [memberId, characterName, teamId, isCompleted]);
 
   useEffect(() => {
