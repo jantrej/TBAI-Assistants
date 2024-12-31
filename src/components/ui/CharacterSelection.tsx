@@ -25,8 +25,8 @@ function useCharacterState(
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const initializationRef = useRef(false);
 
-  // Add this function
-  const resetCharacterState = useCallback(async (characterName: string) => {
+  // Add reset function inside the hook
+  const resetCharacterState = useCallback((characterName: string) => {
     setCharacterStates(prev => ({
       ...prev,
       [characterName]: {
@@ -46,73 +46,92 @@ function useCharacterState(
     }));
   }, []);
 
-  // Return resetCharacterState in the return object
+  useEffect(() => {
+    if (!memberId || !performanceGoals || initializationRef.current) return;
+    
+    async function initializeCharacterStates() {
+      try {
+        // Fetch all character states in parallel
+        const statePromises = characters.map(async (character) => {
+          const [unlockRes, metricsRes, completionRes] = await Promise.all([
+            fetch(`/api/unlock-animations?memberId=${memberId}&characterName=${character.name}`),
+            fetch(`/api/character-performance?memberId=${memberId}&characterName=${character.name}`),
+            fetch(`/api/challenge-completion?memberId=${memberId}&characterName=${character.name}`)
+          ]);
+
+          const [unlockData, metricsData, completionData] = await Promise.all([
+            unlockRes.json(),
+            metricsRes.json(),
+            completionRes.json()
+          ]);
+
+          return {
+            name: character.name,
+            isLocked: !unlockData.unlocked,
+            animationShown: unlockData.shown,
+            metrics: metricsData,
+            isCompleted: completionData.isCompleted || false
+          };
+        });
+
+        const results = await Promise.all(statePromises);
+              
+        const newStates = results.reduce<Record<string, CharacterState>>((acc, result: CharacterStateResult) => {
+          acc[result.name] = {
+            isLocked: result.isLocked,
+            animationShown: result.animationShown,
+            metrics: result.metrics,
+            isCompleted: result.isCompleted || false
+          };
+          return acc;
+        }, {});
+
+        setCharacterStates(newStates);
+        setIsInitialLoad(false);
+        initializationRef.current = true;
+      } catch (error) {
+        console.error('Error initializing character states:', error);
+        setIsInitialLoad(false);
+      }
+    }
+
+    initializeCharacterStates();
+  }, [memberId, performanceGoals]);
+
+  const unlockCharacter = useCallback(async (characterName: string) => {
+    if (!memberId) return;
+
+    try {
+      const completionRes = await fetch(
+        `/api/challenge-completion?memberId=${memberId}&characterName=${characterName}`
+      );
+      const { isCompleted } = await completionRes.json();
+
+      await fetch('/api/unlock-animations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ memberId, characterName })
+      });
+
+      setCharacterStates(prev => ({
+        ...prev,
+        [characterName]: {
+          ...prev[characterName],
+          isLocked: false,
+          animationShown: true,
+          isCompleted: isCompleted || prev[characterName]?.isCompleted || false
+        }
+      }));
+    } catch (error) {
+      console.error('Error unlocking character:', error);
+    }
+  }, [memberId]);
+
   return {
     characterStates,
     isInitialLoad,
     unlockCharacter,
-    resetCharacterState  // Add this
-  };
-}
-
-      const results = await Promise.all(statePromises);
-              
-      const newStates = results.reduce<Record<string, CharacterState>>((acc, result: CharacterStateResult) => {
-        acc[result.name] = {
-          isLocked: result.isLocked,
-          animationShown: result.animationShown,
-          metrics: result.metrics,
-          isCompleted: result.isCompleted || false
-        };
-        return acc;
-      }, {});
-
-      setCharacterStates(newStates);
-      setIsInitialLoad(false);
-      initializationRef.current = true;
-    } catch (error) {
-      console.error('Error initializing character states:', error);
-      setIsInitialLoad(false);
-    }
-  }
-
-  initializeCharacterStates();
-}, [memberId, performanceGoals]);
-
-// Replace the entire unlockCharacter function with:
-const unlockCharacter = useCallback(async (characterName: string) => {
-  if (!memberId) return;
-
-  try {
-    const completionRes = await fetch(
-      `/api/challenge-completion?memberId=${memberId}&characterName=${characterName}`
-    );
-    const { isCompleted } = await completionRes.json();
-
-    await fetch('/api/unlock-animations', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ memberId, characterName })
-    });
-
-    setCharacterStates(prev => ({
-      ...prev,
-      [characterName]: {
-        ...prev[characterName],
-        isLocked: false,
-        animationShown: true,
-        isCompleted: isCompleted || prev[characterName]?.isCompleted || false
-      }
-    }));
-  } catch (error) {
-    console.error('Error unlocking character:', error);
-  }
-}, [memberId]);
-  
-  return {
-    characterStates,
-    isInitialLoad,
-    unlockCharacter
+    resetCharacterState
   };
 }
 
