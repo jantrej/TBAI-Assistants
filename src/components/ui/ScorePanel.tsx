@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import type { StaticImageData } from "next/image"
-const Image = require("next/image").default
+import type { StaticImageData } from "next/image";
+const Image = require("next/image").default;
 
 interface PerformanceMetrics {
   overall_performance: number;
@@ -77,7 +77,7 @@ export function ScorePanel({
     window.top!.location.href = 'https://app.trainedbyai.com/call-records';
   };
 
-const fetchMetrics = useCallback(async () => {
+  const fetchMetrics = useCallback(async () => {
     if (!memberId || !characterName) return;
 
     try {
@@ -85,12 +85,15 @@ const fetchMetrics = useCallback(async () => {
       const completionRes = await fetch(
         `/api/challenge-completion?memberId=${memberId}&characterName=${characterName}`
       );
+      
       if (completionRes.ok) {
         const { isCompleted: wasCompleted } = await completionRes.json();
         if (wasCompleted) {
           wasEverCompleted.current = true;
           setIsCompleted(true);
-     
+        }
+      }
+
       // Then get metrics
       const timestamp = new Date().getTime();
       const random = Math.random();
@@ -105,7 +108,7 @@ const fetchMetrics = useCallback(async () => {
       const data = await response.json();
       setMetrics(data);
 
-      // Only check new completion if not already completed
+      // Check completion criteria
       if (!wasEverCompleted.current && !isCompleted && 
           data.total_calls >= performanceGoals.number_of_calls_average &&
           data.overall_performance >= performanceGoals.overall_performance_goal) {
@@ -128,54 +131,56 @@ const fetchMetrics = useCallback(async () => {
     } finally {
       setIsLoading(false);
     }
-}, [memberId, characterName, performanceGoals, teamId]);
-  
-const resetChallenge = useCallback(async () => {
-  // Only skip if truly completed
-  if (wasEverCompleted.current && isCompleted) {
-    console.log('Challenge was completed successfully, skipping reset');
-    return;
-  }
+  }, [memberId, characterName, performanceGoals, teamId, isCompleted]);
 
-  console.log('Resetting challenge...');
-  
-  try {
-    const response = await fetch('/api/reset-challenge', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        memberId,
-        characterName,
-        teamId
-      })
-    });
+  const resetChallenge = useCallback(async () => {
+    try {
+      // Only skip reset if challenge was actually completed successfully
+      if (wasEverCompleted.current && isCompleted) {
+        console.log('Challenge was completed successfully, skipping reset');
+        return;
+      }
 
-    if (!response.ok) {
-      throw new Error('Failed to reset challenge');
+      console.log('Resetting challenge...');
+
+      // Reset completion flags first
+      wasEverCompleted.current = false;
+      setIsCompleted(false);
+
+      // Reset metrics in UI immediately
+      setMetrics({
+        overall_performance: 0,
+        engagement: 0,
+        objection_handling: 0,
+        information_gathering: 0,
+        program_explanation: 0,
+        closing_skills: 0,
+        overall_effectiveness: 0,
+        total_calls: 0
+      });
+
+      // Then reset in database
+      const response = await fetch('/api/reset-challenge', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          memberId,
+          characterName,
+          teamId
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to reset challenge');
+      }
+
+    } catch (error) {
+      console.error('Error resetting challenge:', error);
     }
+  }, [memberId, characterName, teamId, isCompleted]);
 
-    // Immediately reset local state
-    setMetrics({
-      overall_performance: 0,
-      engagement: 0,
-      objection_handling: 0,
-      information_gathering: 0,
-      program_explanation: 0,
-      closing_skills: 0,
-      overall_effectiveness: 0,
-      total_calls: 0
-    });
-    
-    // Reset completion flags
-    wasEverCompleted.current = false;
-    setIsCompleted(false);
-    
-  } catch (error) {
-    console.error('Error resetting challenge:', error);
-  }
-}, [memberId, characterName, teamId]);
   useEffect(() => {
     fetchMetrics();
     const interval = setInterval(fetchMetrics, 2000);
@@ -205,68 +210,67 @@ const resetChallenge = useCallback(async () => {
     );
   }
 
-return (
-  <>
-    <style jsx>{`
-      .scrollbar-thin {
-        scrollbar-width: thin;
-        scrollbar-color: #f2f3f8 transparent;
-      }
-      
-      .scrollbar-thin::-webkit-scrollbar {
-        width: 2px !important;
-        display: block !important;
-      }
-      
-      .scrollbar-thin::-webkit-scrollbar-track {
-        background: transparent !important;
-        display: block !important;
-      }
-      
-      .scrollbar-thin::-webkit-scrollbar-thumb {
-        background-color: #f2f3f8 !important;
-        border-radius: 20px !important;
-        display: block !important;
-        opacity: 1 !important;
-        visibility: visible !important;
-      }
+  return (
+    <>
+      <style jsx>{`
+        .scrollbar-thin {
+          scrollbar-width: thin;
+          scrollbar-color: #f2f3f8 transparent;
+        }
+        
+        .scrollbar-thin::-webkit-scrollbar {
+          width: 2px !important;
+          display: block !important;
+        }
+        
+        .scrollbar-thin::-webkit-scrollbar-track {
+          background: transparent !important;
+          display: block !important;
+        }
+        
+        .scrollbar-thin::-webkit-scrollbar-thumb {
+          background-color: #f2f3f8 !important;
+          border-radius: 20px !important;
+          display: block !important;
+          opacity: 1 !important;
+          visibility: visible !important;
+        }
 
-      .scrollbar-thin::-webkit-scrollbar-button:single-button {
-        display: none !important;
-      }
-      
-      .scrollbar-thin::-webkit-scrollbar-button:start {
-        display: none !important;
-      }
-      
-      .scrollbar-thin::-webkit-scrollbar-button:end {
-        display: none !important;
-      }
-      
-      .scrollbar-thin::-webkit-scrollbar-button:vertical:start:decrement,
-      .scrollbar-thin::-webkit-scrollbar-button:vertical:end:increment,
-      .scrollbar-thin::-webkit-scrollbar-button:vertical:start:increment,
-      .scrollbar-thin::-webkit-scrollbar-button:vertical:end:decrement {
-        display: none !important;
-      }
-    `}</style>
-    <div className="w-full text-sm h-[320px] flex flex-col">
-      <div className="flex-grow overflow-y-auto scrollbar-thin">
-<h3 className="text-sm font-semibold mb-2 sticky top-0 bg-white py-2 z-10">
-  <div className="mb-1">
-    {(wasEverCompleted.current || isCompleted) ? (
-      "The challenge has been completed. ✅"
-    ) : (
-      // Always show remaining calls if not completed
-      `${Math.max(0, performanceGoals.number_of_calls_average - (metrics?.total_calls || 0))} ${
-        performanceGoals.number_of_calls_average - (metrics?.total_calls || 0) === 1 ? 'call' : 'calls'
-      } left to complete the challenge.`
-    )}
-  </div>
-  <div>
-    Your score from last {metrics?.total_calls || 0} {(metrics?.total_calls || 0) === 1 ? 'call' : 'calls'}:
-  </div>
-</h3>
+        .scrollbar-thin::-webkit-scrollbar-button:single-button {
+          display: none !important;
+        }
+        
+        .scrollbar-thin::-webkit-scrollbar-button:start {
+          display: none !important;
+        }
+        
+        .scrollbar-thin::-webkit-scrollbar-button:end {
+          display: none !important;
+        }
+        
+        .scrollbar-thin::-webkit-scrollbar-button:vertical:start:decrement,
+        .scrollbar-thin::-webkit-scrollbar-button:vertical:end:increment,
+        .scrollbar-thin::-webkit-scrollbar-button:vertical:start:increment,
+        .scrollbar-thin::-webkit-scrollbar-button:vertical:end:decrement {
+          display: none !important;
+        }
+      `}</style>
+      <div className="w-full text-sm h-[320px] flex flex-col">
+        <div className="flex-grow overflow-y-auto scrollbar-thin">
+          <h3 className="text-sm font-semibold mb-2 sticky top-0 bg-white py-2 z-10">
+            <div className="mb-1">
+              {(wasEverCompleted.current || isCompleted) ? (
+                "The challenge has been completed. ✅"
+              ) : (
+                `${Math.max(0, performanceGoals.number_of_calls_average - (metrics?.total_calls || 0))} ${
+                  performanceGoals.number_of_calls_average - (metrics?.total_calls || 0) === 1 ? 'call' : 'calls'
+                } left to complete the challenge.`
+              )}
+            </div>
+            <div>
+              Your score from last {metrics?.total_calls || 0} {(metrics?.total_calls || 0) === 1 ? 'call' : 'calls'}:
+            </div>
+          </h3>
           {categories.map(({ key, label }) => (
             <div key={key} className="bg-[#f8fdf6] p-3 rounded-lg mb-3 mr-2">
               <div className="flex justify-between items-center mb-1">
@@ -286,19 +290,19 @@ return (
             </div>
           ))}
         </div>
-<button 
-  onClick={handleRecordsClick}
-  className="w-full py-3 rounded-[20px] text-black font-semibold text-lg transition-all hover:opacity-90 hover:shadow-lg bg-white shadow-md mb-6 flex items-center justify-center gap-2"
->
-  <img 
-    src="https://res.cloudinary.com/dmbzcxhjn/image/upload/Call_Records_duha_ykcxfj.png"
-    alt="Call Records Icon"
-    width={20}
-    height={20}
-    className="object-contain"
-  />
-  Go to Call Records
-</button>
+        <button 
+          onClick={handleRecordsClick}
+          className="w-full py-3 rounded-[20px] text-black font-semibold text-lg transition-all hover:opacity-90 hover:shadow-lg bg-white shadow-md mb-6 flex items-center justify-center gap-2"
+        >
+          <img 
+            src="https://res.cloudinary.com/dmbzcxhjn/image/upload/Call_Records_duha_ykcxfj.png"
+            alt="Call Records Icon"
+            width={20}
+            height={20}
+            className="object-contain"
+          />
+          Go to Call Records
+        </button>
       </div>
     </>
   );
