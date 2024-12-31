@@ -77,61 +77,26 @@ export function ScorePanel({
     window.top!.location.href = 'https://app.trainedbyai.com/call-records';
   };
 
-  const fetchMetrics = useCallback(async () => {
+const fetchMetrics = useCallback(async () => {
     if (!memberId || !characterName) return;
 
     try {
-      // First check completion status from backend
-      const completionRes = await fetch(
-        `/api/challenge-completion?memberId=${memberId}&characterName=${characterName}`
-      );
-      
-      if (completionRes.ok) {
-        const { isCompleted: wasCompleted } = await completionRes.json();
-        if (wasCompleted) {
-          wasEverCompleted.current = true;
-          setIsCompleted(true);
-        }
-      }
-
-      // Then get metrics
       const timestamp = new Date().getTime();
       const random = Math.random();
       const response = await fetch(
         `/api/character-performance?memberId=${memberId}&characterName=${characterName}&t=${timestamp}&r=${random}`
       );
       
-      if (!response.ok) {
-        throw new Error(await response.text());
-      }
-      
-      const data = await response.json();
-      setMetrics(data);
-
-      // Check completion criteria
-      if (!wasEverCompleted.current && !isCompleted && 
-          data.total_calls >= performanceGoals.number_of_calls_average &&
-          data.overall_performance >= performanceGoals.overall_performance_goal) {
-        setIsCompleted(true);
-        wasEverCompleted.current = true;
-        await fetch('/api/mark-challenge-complete', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            memberId,
-            characterName,
-            teamId
-          })
-        });
+      if (response.ok) {
+        const data = await response.json();
+        setMetrics(data);
       }
     } catch (error) {
       console.error('Error fetching metrics:', error);
     } finally {
       setIsLoading(false);
     }
-  }, [memberId, characterName, performanceGoals, teamId, isCompleted]);
+}, [memberId, characterName]);
 
   const resetChallenge = useCallback(async () => {
     try {
