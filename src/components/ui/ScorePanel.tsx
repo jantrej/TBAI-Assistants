@@ -90,24 +90,7 @@ const fetchMetrics = useCallback(async () => {
         if (wasCompleted) {
           wasEverCompleted.current = true;
           setIsCompleted(true);
-        } else {
-          // FULL RESET when not completed
-          wasEverCompleted.current = false;
-          setIsCompleted(false);
-          setMetrics({
-            overall_performance: 0,
-            engagement: 0,
-            objection_handling: 0,
-            information_gathering: 0,
-            program_explanation: 0,
-            closing_skills: 0,
-            overall_effectiveness: 0,
-            total_calls: 0
-          });
-          return; // Exit early to prevent fetching new metrics
-        }
-      }
-
+     
       // Then get metrics
       const timestamp = new Date().getTime();
       const random = Math.random();
@@ -156,27 +139,43 @@ const resetChallenge = useCallback(async () => {
 
   console.log('Resetting challenge...');
   
-  // Immediately reset local state
-  setMetrics({
-    overall_performance: 0,
-    engagement: 0,
-    objection_handling: 0,
-    information_gathering: 0,
-    program_explanation: 0,
-    closing_skills: 0,
-    overall_effectiveness: 0,
-    total_calls: 0
-  });
-  
-  // Reset completion flags
-  wasEverCompleted.current = false;
-  setIsCompleted(false);
-  
-  // Force an immediate metrics refresh
-  await fetchMetrics();
+  try {
+    const response = await fetch('/api/reset-challenge', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        memberId,
+        characterName,
+        teamId
+      })
+    });
 
-}, [fetchMetrics]);
+    if (!response.ok) {
+      throw new Error('Failed to reset challenge');
+    }
 
+    // Immediately reset local state
+    setMetrics({
+      overall_performance: 0,
+      engagement: 0,
+      objection_handling: 0,
+      information_gathering: 0,
+      program_explanation: 0,
+      closing_skills: 0,
+      overall_effectiveness: 0,
+      total_calls: 0
+    });
+    
+    // Reset completion flags
+    wasEverCompleted.current = false;
+    setIsCompleted(false);
+    
+  } catch (error) {
+    console.error('Error resetting challenge:', error);
+  }
+}, [memberId, characterName, teamId]);
   useEffect(() => {
     fetchMetrics();
     const interval = setInterval(fetchMetrics, 2000);
