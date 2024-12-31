@@ -12,12 +12,12 @@ function CharacterSelection() {
   const { characterStates, isInitialLoad, unlockCharacter, resetCharacterState } = useCharacterState(memberId, performanceGoals);
 
   return (
-    <ScorePanel
-      characterName={characterName}
-      memberId={memberId}
-      performanceGoals={performanceGoals}
-      resetCharacterState={resetCharacterState}
-    />
+<ScorePanel
+  characterName={characterName}
+  memberId={memberId}
+  performanceGoals={performanceGoals}
+  resetCharacterState={resetCharacterState}
+/>
   );
 }
 
@@ -531,7 +531,7 @@ export default function CharacterSelection() {
     number_of_calls_average: number;
   } | null>(null);  // Start as null since we'll fetch it
   
-  const { characterStates, isInitialLoad, unlockCharacter } = useCharacterState(memberId, performanceGoals);
+  const { characterStates, isInitialLoad, unlockCharacter, resetCharacterState } = useCharacterState(memberId, performanceGoals);
 
 useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
