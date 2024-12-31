@@ -98,53 +98,54 @@ const fetchMetrics = useCallback(async () => {
     }
 }, [memberId, characterName]);
 
-  const resetChallenge = useCallback(async () => {
-    try {
-      // Only skip reset if challenge was actually completed successfully
-      if (wasEverCompleted.current && isCompleted) {
-        console.log('Challenge was completed successfully, skipping reset');
-        return;
-      }
-
-      console.log('Resetting challenge...');
-
-      // Reset completion flags first
-      wasEverCompleted.current = false;
-      setIsCompleted(false);
-
-      // Reset metrics in UI immediately
-      setMetrics({
-        overall_performance: 0,
-        engagement: 0,
-        objection_handling: 0,
-        information_gathering: 0,
-        program_explanation: 0,
-        closing_skills: 0,
-        overall_effectiveness: 0,
-        total_calls: 0
-      });
-
-      // Then reset in database
-      const response = await fetch('/api/reset-challenge', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          memberId,
-          characterName,
-          teamId
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to reset challenge');
-      }
-
-    } catch (error) {
-      console.error('Error resetting challenge:', error);
+const resetChallenge = useCallback(async () => {
+  try {
+    if (wasEverCompleted.current && isCompleted) {
+      console.log('Challenge was completed successfully, skipping reset');
+      return;
     }
-  }, [memberId, characterName, teamId, isCompleted]);
+
+    console.log('Resetting challenge...');
+
+    // Reset completion flags first
+    wasEverCompleted.current = false;
+    setIsCompleted(false);
+
+    // Reset metrics in UI immediately
+    setMetrics({
+      overall_performance: 0,
+      engagement: 0,
+      objection_handling: 0,
+      information_gathering: 0,
+      program_explanation: 0,
+      closing_skills: 0,
+      overall_effectiveness: 0,
+      total_calls: 0
+    });
+
+    // Reset in CharacterSelection state
+    resetCharacterState(characterName);
+
+    // Then reset in database
+    const response = await fetch('/api/reset-challenge', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        memberId,
+        characterName,
+        teamId
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to reset challenge');
+    }
+  } catch (error) {
+    console.error('Error resetting challenge:', error);
+  }
+}, [memberId, characterName, teamId, isCompleted, resetCharacterState]);
 
   useEffect(() => {
     fetchMetrics();
