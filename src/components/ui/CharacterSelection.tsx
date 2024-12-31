@@ -6,6 +6,20 @@ import { motion, AnimatePresence } from "framer-motion"
 import { ChevronRight, ChevronLeft, ChevronDown, ChevronUp } from 'lucide-react'
 import { AnimatedLock } from './AnimatedLock'
 import { ScorePanel } from './ScorePanel';
+import { useCharacterState } from './useCharacterState';
+
+function CharacterSelection() {
+  const { characterStates, isInitialLoad, unlockCharacter, resetCharacterState } = useCharacterState(memberId, performanceGoals);
+
+  return (
+    <ScorePanel
+      characterName={characterName}
+      memberId={memberId}
+      performanceGoals={performanceGoals}
+      resetCharacterState={resetCharacterState}
+    />
+  );
+}
 
 function useCharacterState(
   memberId: string | null,
