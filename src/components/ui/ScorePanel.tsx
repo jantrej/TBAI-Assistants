@@ -148,37 +148,34 @@ const fetchMetrics = useCallback(async () => {
 }, [memberId, characterName, performanceGoals, teamId]);
   
 const resetChallenge = useCallback(async () => {
-    // Only skip if successfully completed
-    if (wasEverCompleted.current && isCompleted) {
-      console.log('Challenge was completed successfully, skipping reset');
-      return;
-    }
+  // Only skip if truly completed
+  if (wasEverCompleted.current && isCompleted) {
+    console.log('Challenge was completed successfully, skipping reset');
+    return;
+  }
 
-    try {
-      console.log('Resetting challenge...');
-      const response = await fetch('/api/reset-challenge', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          memberId,
-          characterName,
-          teamId
-        })
-      });
+  console.log('Resetting challenge...');
+  
+  // Immediately reset local state
+  setMetrics({
+    overall_performance: 0,
+    engagement: 0,
+    objection_handling: 0,
+    information_gathering: 0,
+    program_explanation: 0,
+    closing_skills: 0,
+    overall_effectiveness: 0,
+    total_calls: 0
+  });
+  
+  // Reset completion flags
+  wasEverCompleted.current = false;
+  setIsCompleted(false);
+  
+  // Force an immediate metrics refresh
+  await fetchMetrics();
 
-      if (!response.ok) {
-        throw new Error('Failed to reset challenge');
-      }
-
-      // After successful reset, force a refresh of metrics
-      await fetchMetrics();
-      
-    } catch (error) {
-      console.error('Error resetting challenge:', error);
-    }
-}, [memberId, characterName, teamId, isCompleted, fetchMetrics]);
+}, [fetchMetrics]);
 
   useEffect(() => {
     fetchMetrics();
