@@ -19,7 +19,8 @@ export function ScorePanel({
   characterName, 
   memberId,
   performanceGoals,
-  teamId 
+  teamId,
+  resetCharacterState
 }: { 
   characterName: string; 
   memberId: string;
@@ -27,7 +28,8 @@ export function ScorePanel({
   performanceGoals: {
     overall_performance_goal: number;
     number_of_calls_average: number;
-  }; 
+  };
+  resetCharacterState: (characterName: string) => void;
 }) {
   const [metrics, setMetrics] = useState<PerformanceMetrics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
