@@ -14,44 +14,46 @@ function useCharacterState(
     number_of_calls_average: number;
   } | null
 ) {
-const [characterStates, setCharacterStates] = useState<{
-  [key: string]: {
-    isLocked: boolean;
-    animationShown: boolean;
-    metrics: any | null;
-    isCompleted: boolean;
-  };
-}>({});
+  const [characterStates, setCharacterStates] = useState<{
+    [key: string]: {
+      isLocked: boolean;
+      animationShown: boolean;
+      metrics: any | null;
+      isCompleted: boolean;
+    };
+  }>({});
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const initializationRef = useRef(false);
 
-useEffect(() => {
-  if (!memberId || !performanceGoals || initializationRef.current) return;
-    
-  async function initializeCharacterStates() {
-    try {
-      // Fetch all character states in parallel
-const statePromises = characters.map(async (character) => {
-  const [unlockRes, metricsRes, completionRes] = await Promise.all([
-    fetch(`/api/unlock-animations?memberId=${memberId}&characterName=${character.name}`),
-    fetch(`/api/character-performance?memberId=${memberId}&characterName=${character.name}`),
-    fetch(`/api/challenge-completion?memberId=${memberId}&characterName=${character.name}`)
-  ]);
+  // Add this function
+  const resetCharacterState = useCallback(async (characterName: string) => {
+    setCharacterStates(prev => ({
+      ...prev,
+      [characterName]: {
+        ...prev[characterName],
+        metrics: {
+          overall_performance: 0,
+          engagement: 0,
+          objection_handling: 0,
+          information_gathering: 0,
+          program_explanation: 0,
+          closing_skills: 0,
+          overall_effectiveness: 0,
+          total_calls: 0
+        },
+        isCompleted: false
+      }
+    }));
+  }, []);
 
-  const [unlockData, metricsData, completionData] = await Promise.all([
-    unlockRes.json(),
-    metricsRes.json(),
-    completionRes.json()
-  ]);
-
+  // Return resetCharacterState in the return object
   return {
-    name: character.name,
-    isLocked: !unlockData.unlocked,
-    animationShown: unlockData.shown,
-    metrics: metricsData,
-    isCompleted: completionData.isCompleted || false
+    characterStates,
+    isInitialLoad,
+    unlockCharacter,
+    resetCharacterState  // Add this
   };
-});
+}
 
       const results = await Promise.all(statePromises);
               
