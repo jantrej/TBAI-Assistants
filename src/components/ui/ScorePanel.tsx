@@ -172,26 +172,13 @@ const resetChallenge = useCallback(async () => {
         throw new Error('Failed to reset challenge');
       }
 
-      // FULL RESET of all states
-      setMetrics({
-        overall_performance: 0,
-        engagement: 0,
-        objection_handling: 0,
-        information_gathering: 0,
-        program_explanation: 0,
-        closing_skills: 0,
-        overall_effectiveness: 0,
-        total_calls: 0
-      });
-      
-      // Reset completion status
-      wasEverCompleted.current = false;
-      setIsCompleted(false);
+      // After successful reset, force a refresh of metrics
+      await fetchMetrics();
       
     } catch (error) {
       console.error('Error resetting challenge:', error);
     }
-}, [memberId, characterName, teamId, isCompleted]);
+}, [memberId, characterName, teamId, isCompleted, fetchMetrics]);
 
   useEffect(() => {
     fetchMetrics();
