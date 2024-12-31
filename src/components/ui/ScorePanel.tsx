@@ -15,14 +15,8 @@ interface PerformanceMetrics {
   total_calls: number;
 }
 
-export function ScorePanel({ 
-  characterName, 
-  memberId,
-  performanceGoals,
-  teamId,
-  resetCharacterState
-}: { 
-  characterName: string; 
+interface ScorePanelProps {
+  characterName: string;
   memberId: string;
   teamId: string | null;
   performanceGoals: {
@@ -30,7 +24,15 @@ export function ScorePanel({
     number_of_calls_average: number;
   };
   resetCharacterState: (characterName: string) => void;
-}) {
+}
+
+export function ScorePanel({ 
+  characterName, 
+  memberId,
+  performanceGoals,
+  teamId,
+  resetCharacterState
+}: ScorePanelProps) {
   const [metrics, setMetrics] = useState<PerformanceMetrics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isCompleted, setIsCompleted] = useState(false);
@@ -79,7 +81,7 @@ export function ScorePanel({
     window.top!.location.href = 'https://app.trainedbyai.com/call-records';
   };
 
-const fetchMetrics = useCallback(async () => {
+  const fetchMetrics = useCallback(async () => {
     if (!memberId || !characterName) return;
 
     try {
@@ -98,56 +100,56 @@ const fetchMetrics = useCallback(async () => {
     } finally {
       setIsLoading(false);
     }
-}, [memberId, characterName]);
+  }, [memberId, characterName]);
 
-const resetChallenge = useCallback(async () => {
-  try {
-    if (wasEverCompleted.current && isCompleted) {
-      console.log('Challenge was completed successfully, skipping reset');
-      return;
+  const resetChallenge = useCallback(async () => {
+    try {
+      if (wasEverCompleted.current && isCompleted) {
+        console.log('Challenge was completed successfully, skipping reset');
+        return;
+      }
+
+      console.log('Resetting challenge...');
+
+      // Reset completion flags first
+      wasEverCompleted.current = false;
+      setIsCompleted(false);
+
+      // Reset metrics in UI immediately
+      setMetrics({
+        overall_performance: 0,
+        engagement: 0,
+        objection_handling: 0,
+        information_gathering: 0,
+        program_explanation: 0,
+        closing_skills: 0,
+        overall_effectiveness: 0,
+        total_calls: 0
+      });
+
+      // Reset in CharacterSelection state
+      resetCharacterState(characterName);
+
+      // Then reset in database
+      const response = await fetch('/api/reset-challenge', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          memberId,
+          characterName,
+          teamId
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to reset challenge');
+      }
+    } catch (error) {
+      console.error('Error resetting challenge:', error);
     }
-
-    console.log('Resetting challenge...');
-
-    // Reset completion flags first
-    wasEverCompleted.current = false;
-    setIsCompleted(false);
-
-    // Reset metrics in UI immediately
-    setMetrics({
-      overall_performance: 0,
-      engagement: 0,
-      objection_handling: 0,
-      information_gathering: 0,
-      program_explanation: 0,
-      closing_skills: 0,
-      overall_effectiveness: 0,
-      total_calls: 0
-    });
-
-    // Reset in CharacterSelection state
-    resetCharacterState(characterName);
-
-    // Then reset in database
-    const response = await fetch('/api/reset-challenge', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        memberId,
-        characterName,
-        teamId
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to reset challenge');
-    }
-  } catch (error) {
-    console.error('Error resetting challenge:', error);
-  }
-}, [memberId, characterName, teamId, isCompleted, resetCharacterState]);
+  }, [memberId, characterName, teamId, isCompleted, resetCharacterState]);
 
   useEffect(() => {
     fetchMetrics();
